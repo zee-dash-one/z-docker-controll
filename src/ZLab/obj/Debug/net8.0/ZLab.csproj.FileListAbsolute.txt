@@ -1,0 +1,13 @@
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab/bin/Debug/net8.0/config/services.default.json
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab/bin/Debug/net8.0/Assets/z-lab.ico
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab/bin/Debug/net8.0/ZLab.deps.json
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab/bin/Debug/net8.0/ZLab.dll
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab/bin/Debug/net8.0/ZLab.pdb
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab/obj/Debug/net8.0/ZLab.GeneratedMSBuildEditorConfig.editorconfig
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab/obj/Debug/net8.0/ZLab.AssemblyInfoInputs.cache
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab/obj/Debug/net8.0/ZLab.AssemblyInfo.cs
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab/obj/Debug/net8.0/ZLab.csproj.CoreCompileInputs.cache
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab/obj/Debug/net8.0/ZLab.dll
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab/obj/Debug/net8.0/refint/ZLab.dll
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab/obj/Debug/net8.0/ZLab.pdb
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab/obj/Debug/net8.0/ref/ZLab.dll

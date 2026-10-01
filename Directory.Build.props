@@ -1,0 +1,6 @@
+<Project>
+  <!-- Allow net8.0-windows builds from WSL SDK (SPEC / technologies.md). -->
+  <PropertyGroup>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+</Project>

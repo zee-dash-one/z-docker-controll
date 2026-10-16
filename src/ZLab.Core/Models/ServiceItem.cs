@@ -13,6 +13,17 @@ public sealed class ServiceItem
     public int ContainerPort { get; set; }
     public List<string> Volumes { get; set; } = new();
     public Dictionary<string, string> Env { get; set; } = new(StringComparer.Ordinal);
+    /// <summary>
+    /// Docker network mode. <c>host</c> skips published ports (<c>-p</c>).
+    /// </summary>
+    public string NetworkMode { get; set; } = "";
+    public List<string> CapAdd { get; set; } = new();
+    public string Hostname { get; set; } = "";
+    /// <summary>
+    /// Path passed to <c>docker run --env-file</c>. Linux path when the engine is WSL
+    /// (for example <c>/mnt/c/...</c>). Secrets stay in that file, not in <see cref="Env"/>.
+    /// </summary>
+    public string EnvFile { get; set; } = "";
     public int StopTimeoutSeconds { get; set; } = 15;
     public string OpenUrl { get; set; } = "";
     /// <summary>

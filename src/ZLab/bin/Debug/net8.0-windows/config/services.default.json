@@ -3,7 +3,10 @@
   "settings": {
     "backupFolder": "",
     "pollSeconds": 8,
-    "logTailLines": 80
+    "logTailLines": 80,
+    "backupDailyEnabled": true,
+    "backupDailyTime": "03:00",
+    "lastAutoBackupDate": ""
   },
   "services": [
     {
@@ -16,15 +19,18 @@
       "image": "decolua/9router:latest",
       "hostPort": 20128,
       "containerPort": 20128,
-      "volumes": [],
-      "env": {},
+      "volumes": ["9router-data:/app/data"],
+      "env": {
+        "INITIAL_PASSWORD": "123456"
+      },
       "stopTimeoutSeconds": 15,
       "openUrl": "http://localhost:20128",
+      "localHost": "9router-local",
       "health": { "type": "docker" },
       "backup": { "mode": "volumeCopy" },
       "exposeLan": true,
       "firewallRuleName": "ZLab 9Router 20128",
-      "notes": "Gateway de IA — habilitado por padrão."
+      "notes": "Gateway de IA — habilitado por padrão. INITIAL_PASSWORD só no 1º boot (volume). Hosts locais = 9router-local. Tunnel Cloudflare: use botão Tunnel no Z-Lab (CLI token); a UI do 9Router no browser Windows mostra Local only."
     },
     {
       "id": "omniroute",
@@ -37,14 +43,50 @@
       "hostPort": 20129,
       "containerPort": 20128,
       "volumes": ["omniroute-data:/app/data"],
-      "env": {},
+      "env": {
+        "CLOUDFLARED_PROTOCOL": "http2"
+      },
       "stopTimeoutSeconds": 40,
-      "openUrl": "http://localhost:20129",
+      "openUrl": "http://127.0.0.1:20129",
+      "localHost": "omniroute-local",
       "health": { "type": "docker" },
       "backup": { "mode": "volumeCopy" },
       "exposeLan": true,
       "firewallRuleName": "ZLab OmniRoute 20129",
-      "notes": "Gateway unificado — habilitado por padrão. stopTimeout 40s (SQLite)."
+      "notes": "Gateway unificado. Hosts locais = omniroute-local. Cloud OmniRoute (sync) ≠ Cloudflare Quick Tunnel — ative Quick Tunnel no dashboard Endpoints (Install & Enable). Não restaura após restart."
+    },
+    {
+      "id": "tailscale",
+      "displayName": "Tailscale",
+      "category": "gateway",
+      "enabled": true,
+      "managed": true,
+      "containerName": "tailscale-9router",
+      "image": "tailscale/tailscale:latest",
+      "hostPort": 0,
+      "containerPort": 0,
+      "networkMode": "host",
+      "capAdd": ["NET_ADMIN", "NET_RAW"],
+      "hostname": "9router-serve",
+      "envFile": "/mnt/c/GIT/ZAPFCOORP/tailscale-9router/.env",
+      "volumes": [
+        "tailscale-9router-state:/var/lib/tailscale",
+        "/mnt/c/GIT/ZAPFCOORP/tailscale-9router/config:/config:ro"
+      ],
+      "env": {
+        "TS_USERSPACE": "true",
+        "TS_SERVE_CONFIG": "/config/serve.json",
+        "TS_HOSTNAME": "9router-serve",
+        "TS_STATE_DIR": "/var/lib/tailscale",
+        "TS_EXTRA_ARGS": "--advertise-tags=tag:9router"
+      },
+      "stopTimeoutSeconds": 15,
+      "openUrl": "",
+      "health": { "type": "docker" },
+      "backup": { "mode": "none" },
+      "exposeLan": false,
+      "firewallRuleName": "",
+      "notes": "Saída Tailscale dos combos. 443 → 9router (20128), 8443 → omniroute (20129). A chave fica só no .env (guia 05-conta-e-chave.md), nunca neste JSON. Suba 9router e OmniRoute antes. Sem Funnel e sem exit node."
     },
     {
       "id": "postgres",

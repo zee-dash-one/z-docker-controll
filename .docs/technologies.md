@@ -19,6 +19,7 @@
 | App identity | **AssemblyName / exe: `ZLab.exe`**; UI title **Z-Lab** | SPEC product rename; icon `z-lab.ico` | Legacy RouterCtrl / Z-ROUTER names | Do not reintroduce old names in artifacts |
 | Process model | Single Windows process; tray-resident | RF16: close → tray; explicit Exit | Background Windows Service (overkill; no autostart in V1) | — |
 | Docker access | **`DockerCli`** → `docker.exe` **or** `wsl docker` | RF14; operator env has Docker in WSL, not always on Windows PATH | Docker.DotNet SDK (API client) — adds dep + version coupling; named-pipe only | Prefer CLI process spawn; keep DockerCli as sole I/O boundary |
+| Network (WSL) | **IPv4 only** — disable IPv6 for Docker Hub/CloudFront | Operator pulls fail on AAAA (`cannot assign requested address`) | Dual-stack / “fix IPv6” | Canonical script `scripts/fix-wsl-docker-ipv4.sh`; Cursor rule `.cursor/rules/no-ipv6.mdc` |
 | Config format | **JSON** (`System.Text.Json`) | Human-editable catalog; seed + runtime paths defined | YAML (extra package); SQLite (overkill for ~dozen items) | Schema `version: 1`; bump intentionally |
 | Persistence | File under `%AppData%\ZLab\services.json` | NFR-06; no server | Registry, cloud sync | AppData only in V1 |
 | Publish RID | **`win-x64`** self-contained or framework-dependent Desktop | RNF01–02; run on Windows | `win-arm64` (out of current inventory) | Publish from **WSL SDK 8.0.425** |

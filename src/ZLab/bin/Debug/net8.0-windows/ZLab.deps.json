@@ -7,14 +7,30 @@
   "targets": {
     ".NETCoreApp,Version=v8.0": {
       "ZLab/1.0.0": {
+        "dependencies": {
+          "ZLab.Core": "1.0.0"
+        },
         "runtime": {
           "ZLab.dll": {}
+        }
+      },
+      "ZLab.Core/1.0.0": {
+        "runtime": {
+          "ZLab.Core.dll": {
+            "assemblyVersion": "1.0.0",
+            "fileVersion": "1.0.0.0"
+          }
         }
       }
     }
   },
   "libraries": {
     "ZLab/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "ZLab.Core/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

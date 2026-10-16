@@ -6,7 +6,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>ZLab</RootNamespace>
     <AssemblyName>ZLab.Core</AssemblyName>
-    <InternalsVisibleTo>ZLab.Tests</InternalsVisibleTo>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ZLab.Tests" />
+  </ItemGroup>
 
 </Project>

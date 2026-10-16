@@ -25,6 +25,9 @@ public static class DockerCliArgs
     public static string[] BuildPullArgs(string image) =>
         new[] { "pull", image };
 
+    public static string[] BuildImageInspectIdArgs(string image) =>
+        new[] { "image", "inspect", "-f", "{{.Id}}", image };
+
     public static string[] BuildInspectStatusArgs(string containerName) =>
         new[] { "inspect", "-f", "{{.State.Status}}", containerName };
 
@@ -67,16 +70,49 @@ public static class DockerCliArgs
         int hostPort,
         int containerPort,
         IEnumerable<string>? volumes,
-        IReadOnlyDictionary<string, string>? env)
+        IReadOnlyDictionary<string, string>? env,
+        string? networkMode = null,
+        IEnumerable<string>? capAdd = null,
+        string? hostname = null,
+        string? envFile = null)
     {
-        var args = new List<string> { "run", "-d", "--name", containerName };
-        if (hostPort > 0 && containerPort > 0)
+        var args = new List<string>
+        {
+            "run", "-d",
+            "--restart", "unless-stopped",
+            "--name", containerName
+        };
+
+        var hostNetwork = string.Equals(networkMode, "host", StringComparison.OrdinalIgnoreCase);
+        if (!string.IsNullOrWhiteSpace(networkMode))
+            args.AddRange(new[] { "--network", networkMode.Trim() });
+
+        if (!string.IsNullOrWhiteSpace(hostname))
+            args.AddRange(new[] { "--hostname", hostname.Trim() });
+
+        if (capAdd is not null)
+        {
+            foreach (var cap in capAdd)
+            {
+                if (string.IsNullOrWhiteSpace(cap))
+                    continue;
+                args.Add("--cap-add");
+                args.Add(cap.Trim());
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(envFile))
+            args.AddRange(new[] { "--env-file", envFile.Trim() });
+
+        if (!hostNetwork && hostPort > 0 && containerPort > 0)
             args.AddRange(new[] { "-p", $"{hostPort}:{containerPort}" });
 
         if (env is not null)
         {
             foreach (var pair in env)
             {
+                if (string.Equals(pair.Key, "TS_AUTHKEY", StringComparison.OrdinalIgnoreCase))
+                    continue;
                 args.Add("-e");
                 args.Add($"{pair.Key}={pair.Value}");
             }

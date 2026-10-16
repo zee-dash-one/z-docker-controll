@@ -38,10 +38,11 @@ internal static class Program
         var backups = new BackupService(docker, containers);
         var lan = new LanExposeHelper();
         var localHosts = new LocalHostsHelper();
+        var nineTunnel = new NineRouterTunnelHelper(docker);
         var watcher = new StatusWatcher(store, containers);
         var scheduledBackups = new ScheduledBackupService(store, backups);
 
-        using var tray = new TrayApp(store, containers, backups, lan, localHosts, watcher, scheduledBackups);
+        using var tray = new TrayApp(store, containers, backups, lan, localHosts, nineTunnel, watcher, scheduledBackups);
         tray.Run();
     }
 }

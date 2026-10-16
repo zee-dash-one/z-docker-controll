@@ -1,0 +1,9 @@
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/publish/ZLab-next/ZLab.exe
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/publish/ZLab-next/Assets/z-lab.ico
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/publish/ZLab-next/config/services.default.json
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/publish/ZLab-next/ZLab.dll
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/publish/ZLab-next/ZLab.deps.json
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/publish/ZLab-next/ZLab.runtimeconfig.json
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/publish/ZLab-next/ZLab.pdb
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/publish/ZLab-next/ZLab.Core.dll
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/publish/ZLab-next/ZLab.Core.pdb

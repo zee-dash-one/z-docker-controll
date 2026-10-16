@@ -69,7 +69,10 @@ Na V1:
 | IP WSL | `172.29.170.210` |
 | Portproxy | `20128` e `20129` → IP WSL |
 | LAN OmniRoute | `http://192.168.0.106:20129` |
-| Sessões browser | Botão **Hosts locais** → `9router-local` / `omniroute-local` (cookies isolados). Fallback sem hosts: `localhost:20128` + `127.0.0.1:20129` |
+| Sessões browser | Botão **Hosts locais** → `9router-local` / `omniroute-local` (cookies isolados). Fallback: `localhost:20128` + `127.0.0.1:20129` |
+| Tunnel 9Router | Botão **Tunnel** no card (CLI token). UI do 9Router no browser Windows → `Local only: CLI token required` (esperado) |
+| Tunnel OmniRoute | Cloud OmniRoute (sync) ≠ Cloudflare Quick Tunnel — ative Quick Tunnel no dashboard Endpoints |
+| **IPv6** | **Proibido neste lab.** WSL/Docker **somente IPv4** (Docker Hub/CloudFront quebram em AAAA). Script: `scripts/fix-wsl-docker-ipv4.sh`. Regra: `.cursor/rules/no-ipv6.mdc`. |
 
 ### Caminhos
 
@@ -173,6 +176,7 @@ Lab local com vários containers Docker no WSL (gateways de IA hoje; amanhã DB,
 | RNF04 | Async; UI não trava em docker longo |
 | RNF05 | Não logar secrets; avisar que backup pode conter chaves |
 | RNF06 | Não oferecer `docker system prune` / apagar volumes |
+| RNF07 | Rede WSL/Docker **IPv4 only** — não depender de IPv6 (registry/CloudFront) |
 
 ---
 
@@ -268,9 +272,10 @@ Start ZLab.exe
 | Parar | `stop -t timeout` |
 | Reiniciar | `restart` |
 | Status / Stats / Logs | docker inspect / stats / logs |
-| Atualizar | confirma → pull → recreate preservando mounts |
+| Atualizar | confirma → pull → recreate preservando mounts (`--restart unless-stopped`) |
 | Abrir | `openUrl` |
 | Hosts locais | (toolbar) grava aliases `localHost` no hosts Windows + atualiza `openUrl` |
+| Tunnel (9router) | Ativa Cloudflare tunnel via CLI token do volume (bypass do gate local-only) |
 | Backup | se mode ≠ none; pasta settings |
 | Expor LAN | se exposeLan (Admin) |
 | Ativar / Desativar | só muda `enabled` + persist |

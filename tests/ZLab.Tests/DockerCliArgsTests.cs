@@ -75,6 +75,75 @@ public sealed class DockerCliArgsTests
     }
 
     [Fact]
+    public void BuildRunArgs_IncludesRestartUnlessStopped()
+    {
+        var args = DockerCliArgs.BuildRunArgs(
+            "9router",
+            "decolua/9router:latest",
+            hostPort: 20128,
+            containerPort: 20128,
+            volumes: new[] { "9router-data:/app/data" },
+            env: new Dictionary<string, string> { ["INITIAL_PASSWORD"] = "123456" });
+
+        Assert.Equal(
+            new[]
+            {
+                "run", "-d",
+                "--restart", "unless-stopped",
+                "--name", "9router",
+                "-p", "20128:20128",
+                "-e", "INITIAL_PASSWORD=123456",
+                "-v", "9router-data:/app/data",
+                "decolua/9router:latest"
+            },
+            args);
+    }
+
+    [Fact]
+    public void BuildRunArgs_HostNetwork_UsesCapsHostnameAndEnvFile_OmitsPortAndAuthKey()
+    {
+        var args = DockerCliArgs.BuildRunArgs(
+            "tailscale-9router",
+            "tailscale/tailscale:latest",
+            hostPort: 20128,
+            containerPort: 20128,
+            volumes: new[]
+            {
+                "tailscale-9router-state:/var/lib/tailscale",
+                "/mnt/c/GIT/ZAPFCOORP/tailscale-9router/config:/config:ro"
+            },
+            env: new Dictionary<string, string>
+            {
+                ["TS_USERSPACE"] = "true",
+                ["TS_AUTHKEY"] = "tskey-auth-secret-should-not-appear"
+            },
+            networkMode: "host",
+            capAdd: new[] { "NET_ADMIN", "NET_RAW" },
+            hostname: "9router-serve",
+            envFile: "/mnt/c/GIT/ZAPFCOORP/tailscale-9router/.env");
+
+        Assert.Equal(
+            new[]
+            {
+                "run", "-d",
+                "--restart", "unless-stopped",
+                "--name", "tailscale-9router",
+                "--network", "host",
+                "--hostname", "9router-serve",
+                "--cap-add", "NET_ADMIN",
+                "--cap-add", "NET_RAW",
+                "--env-file", "/mnt/c/GIT/ZAPFCOORP/tailscale-9router/.env",
+                "-e", "TS_USERSPACE=true",
+                "-v", "tailscale-9router-state:/var/lib/tailscale",
+                "-v", "/mnt/c/GIT/ZAPFCOORP/tailscale-9router/config:/config:ro",
+                "tailscale/tailscale:latest"
+            },
+            args);
+        Assert.DoesNotContain(args, a => a.Contains("tskey-auth", StringComparison.Ordinal));
+        Assert.DoesNotContain("-p", args);
+    }
+
+    [Fact]
     public void PublicSurface_HasNoPruneOrVolumeDeleteHelpers()
     {
         var methods = typeof(DockerCliArgs).GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)

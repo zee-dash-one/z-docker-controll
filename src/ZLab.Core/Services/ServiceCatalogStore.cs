@@ -189,10 +189,66 @@ public sealed class ServiceCatalogStore
                 omni.OpenUrl = "http://127.0.0.1:20129";
                 changed = true;
             }
+
+            omni.Env ??= new Dictionary<string, string>(StringComparer.Ordinal);
+            if (!omni.Env.ContainsKey("CLOUDFLARED_PROTOCOL"))
+            {
+                omni.Env["CLOUDFLARED_PROTOCOL"] = "http2";
+                changed = true;
+            }
+        }
+
+        if (!doc.Services.Any(s => string.Equals(s.Id, "tailscale", StringComparison.Ordinal)))
+        {
+            var tailscale = CreateTailscaleServiceItem();
+            var omniIndex = doc.Services.FindIndex(s =>
+                string.Equals(s.Id, "omniroute", StringComparison.Ordinal));
+            if (omniIndex >= 0)
+                doc.Services.Insert(omniIndex + 1, tailscale);
+            else
+                doc.Services.Add(tailscale);
+            changed = true;
         }
 
         return changed;
     }
+
+    internal static ServiceItem CreateTailscaleServiceItem() => new()
+    {
+        Id = "tailscale",
+        DisplayName = "Tailscale",
+        Category = "gateway",
+        Enabled = true,
+        Managed = true,
+        ContainerName = "tailscale-9router",
+        Image = "tailscale/tailscale:latest",
+        HostPort = 0,
+        ContainerPort = 0,
+        NetworkMode = "host",
+        CapAdd = new List<string> { "NET_ADMIN", "NET_RAW" },
+        Hostname = "9router-serve",
+        EnvFile = "/mnt/c/GIT/ZAPFCOORP/tailscale-9router/.env",
+        Volumes = new List<string>
+        {
+            "tailscale-9router-state:/var/lib/tailscale",
+            "/mnt/c/GIT/ZAPFCOORP/tailscale-9router/config:/config:ro"
+        },
+        Env = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["TS_USERSPACE"] = "true",
+            ["TS_SERVE_CONFIG"] = "/config/serve.json",
+            ["TS_HOSTNAME"] = "9router-serve",
+            ["TS_STATE_DIR"] = "/var/lib/tailscale",
+            ["TS_EXTRA_ARGS"] = "--advertise-tags=tag:9router"
+        },
+        StopTimeoutSeconds = 15,
+        OpenUrl = "",
+        Health = new HealthSpec { Type = "docker" },
+        Backup = new BackupSpec { Mode = "none" },
+        ExposeLan = false,
+        FirewallRuleName = "",
+        Notes = "Saída Tailscale dos combos. 443 → 9router (20128), 8443 → omniroute (20129). A chave fica só no .env (guia 05-conta-e-chave.md), nunca neste JSON. Suba 9router e OmniRoute antes. Sem Funnel e sem exit node."
+    };
 
     private void EnsureSeededUnlocked()
     {

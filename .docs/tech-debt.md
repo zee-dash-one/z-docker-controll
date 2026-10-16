@@ -19,3 +19,7 @@ Suite: run `dotnet test ZLab.sln -c Release` after flicker / daily backup / tray
 2. Extract stop-all filter + exit-outcome logic from `TrayApp.RequestExitAsync` for pure unit tests (EX-AC-03/04/07).
 3. Optional smoke script for live Docker ACs on operator WSL2 machine.
 4. Anti-flicker: panel poll uses `ApplyStatuses` in-place; structural rebuild only on enable/disable/reload (UI-AC-12).
+
+## Network policy
+
+**IPv6 is not used in this lab.** Keep WSL/Docker IPv4-only (`scripts/fix-wsl-docker-ipv4.sh`, `.cursor/rules/no-ipv6.mdc`, SPEC RNF07). Do not treat dual-stack/IPv6 enablement as a fix for registry pull errors.

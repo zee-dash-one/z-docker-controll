@@ -69,6 +69,13 @@ public sealed class ContainerService
         if (status == ContainerStatusKind.Up)
             return OpResult.Success("Já em execução.", ContainerStatusKind.Up);
 
+        if (!string.IsNullOrWhiteSpace(item.EnvFile))
+        {
+            var authError = TailscaleAuthKeyCheck.Validate(item.EnvFile);
+            if (authError is not null)
+                return OpResult.Fail(authError);
+        }
+
         if (status == ContainerStatusKind.Absent)
         {
             var runArgs = DockerCliArgs.BuildRunArgs(
@@ -77,7 +84,11 @@ public sealed class ContainerService
                 item.HostPort,
                 item.ContainerPort,
                 item.Volumes,
-                item.Env);
+                item.Env,
+                item.NetworkMode,
+                item.CapAdd,
+                item.Hostname,
+                item.EnvFile);
             var run = await _cli.RunAsync(runArgs, cancellationToken).ConfigureAwait(false);
             if (!run.Succeeded)
                 return OpResult.Fail(PreferErr(run, "Falha ao criar/iniciar o container."));
@@ -187,8 +198,35 @@ public sealed class ContainerService
 
         var pull = await _cli.RunAsync(DockerCliArgs.BuildPullArgs(item.Image), cancellationToken)
             .ConfigureAwait(false);
+        var usedLocalImage = false;
         if (!pull.Succeeded)
-            return OpResult.Fail(PreferErr(pull, "Falha ao baixar a imagem."));
+        {
+            var err = PreferErr(pull, "Falha ao baixar a imagem.");
+            var combined = ((pull.StdErr ?? "") + "\n" + (pull.StdOut ?? "") + "\n" + err);
+            if (LooksLikeRegistryNetworkIssue(combined))
+            {
+                var local = await _cli.RunAsync(
+                        DockerCliArgs.BuildImageInspectIdArgs(item.Image),
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (local.Succeeded && !string.IsNullOrWhiteSpace(local.StdOut))
+                {
+                    usedLocalImage = true;
+                }
+                else
+                {
+                    return OpResult.Fail(
+                        err
+                        + "\n\nDocker Hub/CloudFront falhou por IPv6 no WSL."
+                        + "\nRode: wsl -u root -- bash /mnt/c/GIT/ZAPFCOORP/router-ctrl/scripts/fix-wsl-docker-ipv4.sh"
+                        + "\nDepois tente Atualizar de novo.");
+                }
+            }
+            else
+            {
+                return OpResult.Fail(err);
+            }
+        }
 
         var prior = await GetStatusAsync(item, cancellationToken).ConfigureAwait(false);
         if (prior != ContainerStatusKind.Absent)
@@ -206,7 +244,19 @@ public sealed class ContainerService
                 return OpResult.Fail(PreferErr(rm, "Falha ao remover container antigo."));
         }
 
-        return await StartAsync(item, cancellationToken).ConfigureAwait(false);
+        var start = await StartAsync(item, cancellationToken).ConfigureAwait(false);
+        if (!start.Ok)
+            return start;
+
+        if (usedLocalImage)
+        {
+            return OpResult.Success(
+                "Container recriado com imagem local (pull falhou por rede/IPv6). "
+                + "Corrija a rede e atualize de novo para pegar a versão mais recente.",
+                ContainerStatusKind.Up);
+        }
+
+        return start;
     }
 
     public static bool TryOpenUrl(ServiceItem item, out string? error)
@@ -242,5 +292,19 @@ public sealed class ContainerService
         if (!string.IsNullOrWhiteSpace(result.StdOut))
             return result.StdOut.Trim();
         return fallback;
+    }
+
+    private static bool LooksLikeRegistryNetworkIssue(string text)
+    {
+        var t = text.ToLowerInvariant();
+        return t.Contains("network is unreachable", StringComparison.Ordinal)
+               || t.Contains("cannot assign requested address", StringComparison.Ordinal)
+               || t.Contains("dial tcp [", StringComparison.Ordinal)
+               || t.Contains("production.cloudfront.docker.com", StringComparison.Ordinal)
+               || t.Contains("registry-1.docker.io", StringComparison.Ordinal)
+               || t.Contains("i/o timeout", StringComparison.Ordinal)
+               || t.Contains("no route to host", StringComparison.Ordinal)
+               || t.Contains("failed to copy", StringComparison.Ordinal)
+               || t.Contains("httpreadseeker", StringComparison.Ordinal);
     }
 }

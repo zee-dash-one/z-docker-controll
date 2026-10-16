@@ -15,6 +15,7 @@ internal sealed class TrayApp : IDisposable
     private readonly BackupService _backups;
     private readonly LanExposeHelper _lan;
     private readonly LocalHostsHelper _localHosts;
+    private readonly NineRouterTunnelHelper _nineTunnel;
     private readonly StatusWatcher _watcher;
     private readonly ScheduledBackupService _scheduledBackups;
     private readonly NotifyIcon _notifyIcon;
@@ -30,6 +31,7 @@ internal sealed class TrayApp : IDisposable
         BackupService backups,
         LanExposeHelper lan,
         LocalHostsHelper localHosts,
+        NineRouterTunnelHelper nineTunnel,
         StatusWatcher watcher,
         ScheduledBackupService scheduledBackups)
     {
@@ -38,6 +40,7 @@ internal sealed class TrayApp : IDisposable
         _backups = backups;
         _lan = lan;
         _localHosts = localHosts;
+        _nineTunnel = nineTunnel;
         _watcher = watcher;
         _scheduledBackups = scheduledBackups;
 
@@ -70,7 +73,7 @@ internal sealed class TrayApp : IDisposable
     {
         if (_mainForm is null || _mainForm.IsDisposed)
         {
-            _mainForm = new MainForm(_store, _containers, _backups, _lan, _localHosts, _watcher, _icon, RequestExitAsync);
+            _mainForm = new MainForm(_store, _containers, _backups, _lan, _localHosts, _nineTunnel, _watcher, _icon, RequestExitAsync);
             _mainForm.FormClosed += (_, _) => { _mainForm = null; };
         }
 

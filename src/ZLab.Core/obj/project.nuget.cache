@@ -1,10 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "Hq/WRLanGLo=",
+  "dgSpecHash": "W5t8cDq5vr0=",
   "success": true,
-  "projectFilePath": "/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab.Core/ZLab.Core.csproj",
-  "expectedPackageFiles": [
-    "/home/hill/.nuget/packages/microsoft.windowsdesktop.app.ref/8.0.31/microsoft.windowsdesktop.app.ref.8.0.31.nupkg.sha512"
-  ],
+  "projectFilePath": "C:\\GIT\\ZAPFCOORP\\router-ctrl\\src\\ZLab.Core\\ZLab.Core.csproj",
+  "expectedPackageFiles": [],
   "logs": []
 }

@@ -28,6 +28,7 @@ internal sealed class MainForm : Form
     private readonly BackupService _backups;
     private readonly LanExposeHelper _lan;
     private readonly LocalHostsHelper _localHosts;
+    private readonly NineRouterTunnelHelper _nineTunnel;
     private readonly StatusWatcher _watcher;
     private readonly Func<Task<bool>> _requestExit;
 
@@ -71,6 +72,7 @@ internal sealed class MainForm : Form
         BackupService backups,
         LanExposeHelper lan,
         LocalHostsHelper localHosts,
+        NineRouterTunnelHelper nineTunnel,
         StatusWatcher watcher,
         Icon icon,
         Func<Task<bool>> requestExit)
@@ -80,6 +82,7 @@ internal sealed class MainForm : Form
         _backups = backups;
         _lan = lan;
         _localHosts = localHosts;
+        _nineTunnel = nineTunnel;
         _watcher = watcher;
         _requestExit = requestExit;
 
@@ -642,8 +645,28 @@ internal sealed class MainForm : Form
             AppendCommandNote($"—— Atualizar {item.DisplayName} ——");
             ShowCommandLogTab();
             var r = await _containers.UpdateAsync(item);
-            if (!r.Ok) ShowError(r.Message);
-            else ShowInfo($"{item.DisplayName} atualizado.");
+            if (!r.Ok)
+            {
+                ShowError(r.Message);
+            }
+            else
+            {
+                ShowInfo(string.IsNullOrWhiteSpace(r.Message)
+                    ? $"{item.DisplayName} atualizado."
+                    : r.Message);
+                if (string.Equals(item.Id, "9router", StringComparison.Ordinal))
+                {
+                    var reenable = MessageBox.Show(
+                        "Reativar o tunnel Cloudflare do 9Router agora?\n"
+                        + "(O Update recria o container e o tunnel cai.)",
+                        "Z-Lab — Tunnel 9Router",
+                        MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Question,
+                        MessageBoxDefaultButton.Button1);
+                    if (reenable == DialogResult.Yes)
+                        await EnableNineRouterTunnelAsync(item);
+                }
+            }
             ShowCommandLogTab();
         });
 
@@ -667,6 +690,29 @@ internal sealed class MainForm : Form
                 var r = await _lan.ExposeAsync(item);
                 if (!r.Ok) ShowError(r.Message);
                 else ShowInfo(r.Message);
+            });
+        }
+
+        if (string.Equals(item.Id, "9router", StringComparison.Ordinal))
+        {
+            Queue("Tunnel", async () => await EnableNineRouterTunnelAsync(item));
+            Queue("Tunnel status", async () =>
+            {
+                AppendCommandNote($"—— Tunnel status {item.DisplayName} ——");
+                ShowCommandLogTab();
+                var r = await _nineTunnel.GetStatusAsync(item);
+                if (!r.Ok)
+                {
+                    ShowError(r.Message);
+                    return;
+                }
+
+                var detail = r.Message;
+                if (!string.IsNullOrWhiteSpace(r.TunnelUrl))
+                    detail += "\n" + r.TunnelUrl;
+                if (!string.IsNullOrWhiteSpace(r.PublicUrl))
+                    detail += "\n" + r.PublicUrl;
+                ShowInfo(detail);
             });
         }
 
@@ -723,7 +769,7 @@ internal sealed class MainForm : Form
 
         var meta = new Label
         {
-            Text = $"{item.Category} · :{item.HostPort}",
+            Text = item.HostPort > 0 ? $"{item.Category} · :{item.HostPort}" : item.Category,
             ForeColor = TextMuted,
             AutoSize = true,
             Location = new Point(8, autoBackupLabel is null ? 52 : 70)
@@ -1067,6 +1113,25 @@ internal sealed class MainForm : Form
         RebuildUi();
         await RefreshStatusesAsync();
         ShowInfo("Catálogo recarregado.");
+    }
+
+    private async Task EnableNineRouterTunnelAsync(ServiceItem item)
+    {
+        AppendCommandNote($"—— Tunnel enable {item.DisplayName} ——");
+        ShowCommandLogTab();
+        var r = await _nineTunnel.EnableAsync(item);
+        if (!r.Ok)
+        {
+            ShowError(r.Message);
+            return;
+        }
+
+        var detail = r.Message;
+        if (!string.IsNullOrWhiteSpace(r.TunnelUrl))
+            detail += "\n" + r.TunnelUrl;
+        if (!string.IsNullOrWhiteSpace(r.PublicUrl))
+            detail += "\n" + r.PublicUrl;
+        ShowInfo(detail);
     }
 
     private async Task ConfigureLocalHostsAsync()

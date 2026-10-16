@@ -75,14 +75,14 @@ public sealed class ServiceCatalogStoreTests : IDisposable
     }
 
     [Fact]
-    public void EnsureSeeded_DefaultEnabled_Only9routerAndOmniroute()
+    public void EnsureSeeded_DefaultEnabled_GatewaysAndTailscale()
     {
         var store = CreateStore();
         store.EnsureSeeded();
         var loaded = store.Load();
 
         var enabledIds = loaded.Services.Where(s => s.Enabled).Select(s => s.Id).OrderBy(x => x).ToArray();
-        Assert.Equal(new[] { "9router", "omniroute" }, enabledIds);
+        Assert.Equal(new[] { "9router", "omniroute", "tailscale" }, enabledIds);
 
         var disabled = loaded.Services.Where(s => !s.Enabled).Select(s => s.Id).ToHashSet(StringComparer.Ordinal);
         Assert.Contains("postgres", disabled);
@@ -387,6 +387,45 @@ public sealed class ServiceCatalogStoreTests : IDisposable
         var reloaded = store2.Load();
 
         Assert.Contains(reloaded.Services, s => s.Id == "n8n" && s.Enabled);
+    }
+
+    [Fact]
+    public void Load_InsertsTailscaleService_OnceWhenMissing()
+    {
+        var store = CreateStore();
+        store.EnsureSeeded();
+        var loaded = store.Load();
+        var existing = Assert.Single(loaded.Services, s => s.Id == "tailscale");
+        loaded.Services.Remove(existing);
+        store.Save(loaded);
+
+        var migrated = store.Load();
+        var inserted = Assert.Single(migrated.Services, s => s.Id == "tailscale");
+        Assert.Equal("tailscale-9router", inserted.ContainerName);
+        Assert.Equal("host", inserted.NetworkMode);
+        Assert.Equal(new[] { "NET_ADMIN", "NET_RAW" }, inserted.CapAdd);
+        Assert.Equal("9router-serve", inserted.Hostname);
+        Assert.Equal("/mnt/c/GIT/ZAPFCOORP/tailscale-9router/.env", inserted.EnvFile);
+        Assert.False(inserted.ExposeLan);
+        Assert.Equal("none", inserted.Backup.Mode);
+        Assert.DoesNotContain(inserted.Env.Keys, k => k.Equals("TS_AUTHKEY", StringComparison.OrdinalIgnoreCase));
+
+        var again = store.Load();
+        Assert.Single(again.Services, s => s.Id == "tailscale");
+    }
+
+    [Fact]
+    public void Load_DoesNotReplaceExistingTailscaleItem()
+    {
+        var store = CreateStore();
+        store.EnsureSeeded();
+        var loaded = store.Load();
+        var existing = Assert.Single(loaded.Services, s => s.Id == "tailscale");
+        existing.DisplayName = "Tailscale custom";
+        store.Save(loaded);
+
+        var again = store.Load();
+        Assert.Equal("Tailscale custom", Assert.Single(again.Services, s => s.Id == "tailscale").DisplayName);
     }
 
     [Fact]

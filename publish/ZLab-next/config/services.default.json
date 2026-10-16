@@ -20,14 +20,17 @@
       "hostPort": 20128,
       "containerPort": 20128,
       "volumes": ["9router-data:/app/data"],
-      "env": {},
+      "env": {
+        "INITIAL_PASSWORD": "123456"
+      },
       "stopTimeoutSeconds": 15,
       "openUrl": "http://localhost:20128",
+      "localHost": "9router-local",
       "health": { "type": "docker" },
       "backup": { "mode": "volumeCopy" },
       "exposeLan": true,
       "firewallRuleName": "ZLab 9Router 20128",
-      "notes": "Gateway de IA — habilitado por padrão."
+      "notes": "Gateway de IA — habilitado por padrão. INITIAL_PASSWORD só no 1º boot (volume). Hosts locais = 9router-local. Tunnel Cloudflare: use botão Tunnel no Z-Lab (CLI token); a UI do 9Router no browser Windows mostra Local only."
     },
     {
       "id": "omniroute",
@@ -40,14 +43,17 @@
       "hostPort": 20129,
       "containerPort": 20128,
       "volumes": ["omniroute-data:/app/data"],
-      "env": {},
+      "env": {
+        "CLOUDFLARED_PROTOCOL": "http2"
+      },
       "stopTimeoutSeconds": 40,
-      "openUrl": "http://localhost:20129",
+      "openUrl": "http://127.0.0.1:20129",
+      "localHost": "omniroute-local",
       "health": { "type": "docker" },
       "backup": { "mode": "volumeCopy" },
       "exposeLan": true,
       "firewallRuleName": "ZLab OmniRoute 20129",
-      "notes": "Gateway unificado — habilitado por padrão. stopTimeout 40s (SQLite)."
+      "notes": "Gateway unificado. Hosts locais = omniroute-local. Cloud OmniRoute (sync) ≠ Cloudflare Quick Tunnel — ative Quick Tunnel no dashboard Endpoints (Install & Enable). Não restaura após restart."
     },
     {
       "id": "postgres",

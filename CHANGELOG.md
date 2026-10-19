@@ -2,6 +2,12 @@
 
 ## 2026-10-19
 
+### todo 05: código de acesso MausBot
+
+- Botão "Código de acesso" só no card do MausBot; `AccessCodePopover` com Copiar (código só em memória).
+- `MausBotAccessCode`: lê `pairing code:` nos logs (`docker logs --timestamps --tail 2000`); se vazio, mint via `docker exec … pair` (mesmo formato). Nunca grava o valor.
+- Formato: `pairing code:\s*(\S+)` (ex. `XXXX-XXXX-XXXX`). Saída: só `Código de acesso do MausBot exibido.`
+
 ### todo 04: cards de serviço
 
 - `ServiceCard` em grade responsiva (3/2/1 colunas), pílula, endereço clicável, mini monitor CPU/memória.

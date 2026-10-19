@@ -10,6 +10,15 @@ public sealed class ServiceCard : RoundedPanel
     private readonly ThinProgressBar _memBar = new() { BarHeight = Tokens.BarHeightCard, ColorMode = ProgressColorMode.Severity };
     private readonly ZButton _playStop = new() { IconOnly = true, Variant = ZButtonVariant.Ghost };
     private readonly ZButton _logs = new() { IconOnly = true, Glyph = Glyphs.Document, Variant = ZButtonVariant.Ghost };
+    private readonly ZButton _accessCode = new()
+    {
+        Text = "Código de acesso",
+        Glyph = Glyphs.Permissions,
+        Compact = true,
+        Variant = ZButtonVariant.Secondary,
+        AccentForeground = true,
+        Visible = false
+    };
     private readonly ZButton _open = new() { IconOnly = true, Glyph = Glyphs.OpenInNewWindow, Variant = ZButtonVariant.Ghost };
     private readonly ZButton _more = new() { IconOnly = true, Glyph = Glyphs.More, Variant = ZButtonVariant.Ghost };
     private readonly ContextMenuStrip _menu;
@@ -41,12 +50,14 @@ public sealed class ServiceCard : RoundedPanel
         Controls.Add(_memBar);
         Controls.Add(_playStop);
         Controls.Add(_logs);
+        Controls.Add(_accessCode);
         Controls.Add(_open);
         Controls.Add(_more);
 
         _tips.SetToolTip(_logs, "Logs");
         _tips.SetToolTip(_open, "Abrir");
         _tips.SetToolTip(_more, "Mais ações");
+        _tips.SetToolTip(_accessCode, "Código de primeiro acesso do MausBot");
 
         _playStop.Click += (_, _) =>
         {
@@ -56,6 +67,7 @@ public sealed class ServiceCard : RoundedPanel
                 StartClicked?.Invoke(this, EventArgs.Empty);
         };
         _logs.Click += (_, _) => LogsClicked?.Invoke(this, EventArgs.Empty);
+        _accessCode.Click += (_, _) => AccessCodeClicked?.Invoke(this, EventArgs.Empty);
         _open.Click += (_, _) =>
         {
             if (_view.OpenUrl is string url)
@@ -87,15 +99,19 @@ public sealed class ServiceCard : RoundedPanel
     public event EventHandler? StartClicked;
     public event EventHandler? StopClicked;
     public event EventHandler? LogsClicked;
+    public event EventHandler? AccessCodeClicked;
     public event EventHandler? CreateClicked;
     public event EventHandler? UpdateClicked;
     public event EventHandler? UsageClicked;
     public event EventHandler<string>? OpenFailed;
 
+    public ZButton AccessCodeButton => _accessCode;
+
     public void Bind(RemoteService service)
     {
         _service = service;
         _glyph = GlyphFor(service);
+        _accessCode.Visible = string.Equals(service.Id, "mausbot", StringComparison.Ordinal);
         ApplyView(ServiceCardPresenter.From(service, null, 4, DateTimeOffset.UtcNow, false));
     }
 
@@ -194,6 +210,13 @@ public sealed class ServiceCard : RoundedPanel
         var actionY = Height - LogicalToDeviceUnits(10) - LogicalToDeviceUnits(32);
         _playStop.Location = new Point(padX, actionY);
         _logs.Location = new Point(_playStop.Right + LogicalToDeviceUnits(4), actionY);
+        if (_accessCode.Visible)
+        {
+            _accessCode.Location = new Point(
+                _logs.Right + LogicalToDeviceUnits(4),
+                actionY + (LogicalToDeviceUnits(32) - _accessCode.Height) / 2);
+        }
+
         _more.Location = new Point(Width - padX - _more.Width, actionY);
         _open.Location = new Point(_more.Left - LogicalToDeviceUnits(4) - _open.Width, actionY);
     }
@@ -226,6 +249,17 @@ public sealed class ServiceCard : RoundedPanel
         _menuCreate.Enabled = view.CanCreate;
         _menuUpdate.Enabled = view.CanUpdate;
         _menuUsage.Enabled = view.CanUsage;
+
+        if (_accessCode.Visible)
+        {
+            var running = view.CanStop;
+            _accessCode.Enabled = running;
+            _tips.SetToolTip(
+                _accessCode,
+                running
+                    ? "Código de primeiro acesso do MausBot"
+                    : "Suba o MausBot para gerar o código de acesso.");
+        }
 
         _cpuBar.Value = view.CpuPercent ?? 0;
         _memBar.Value = view.MemPercent ?? 0;

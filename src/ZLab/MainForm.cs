@@ -8,6 +8,7 @@ internal sealed class MainForm : Form
     private readonly ServerMonitor _monitor;
     private readonly StatusWatcher _watcher;
     private readonly StatsPoller _stats;
+    private readonly MausBotAccessCode _accessCode;
     private readonly Func<Task> _wakeAsync;
     private readonly Func<Task> _loginAsync;
     private readonly Action _endSession;
@@ -27,6 +28,7 @@ internal sealed class MainForm : Form
     private bool _waking;
     private bool _serverResponds;
     private string _lastOutput = "";
+    private AccessCodePopover? _accessPopover;
 
     public MainForm(
         ServerMonitor monitor,
@@ -41,6 +43,7 @@ internal sealed class MainForm : Form
         _monitor = monitor;
         _watcher = watcher;
         _stats = stats;
+        _accessCode = new MausBotAccessCode(monitor.Session);
         _wakeAsync = wakeAsync;
         _loginAsync = loginAsync;
         _endSession = endSession;
@@ -122,6 +125,9 @@ internal sealed class MainForm : Form
             _stats.ErrorOnce -= OnStatsError;
             _probeTimer.Stop();
             _probeTimer.Dispose();
+            _accessPopover?.ClearCode();
+            _accessPopover?.Dispose();
+            _accessPopover = null;
         }
 
         base.Dispose(disposing);
@@ -229,7 +235,46 @@ internal sealed class MainForm : Form
             await ShowOutputAsync(s.DisplayName + " logs", () => _monitor.LogsAsync(s.Id, CancellationToken.None));
         _dashboard.UsageRequested += async (_, s) =>
             await ShowOutputAsync(s.DisplayName + " uso", () => _monitor.StatsAsync(s.Id, CancellationToken.None));
+        _dashboard.AccessCodeRequested += async (_, card) => await ShowAccessCodeAsync(card);
         _dashboard.CardMessage += (_, msg) => Note(msg);
+    }
+
+    private async Task ShowAccessCodeAsync(ServiceCard card)
+    {
+        if (_busy || _sessionState != SessionState.Connected)
+            return;
+
+        var button = card.AccessCodeButton;
+        var previous = button.Text;
+        button.Enabled = false;
+        button.Text = "Buscando…";
+        try
+        {
+            var result = await _accessCode.FetchAsync(CancellationToken.None).ConfigureAwait(true);
+            if (IsDisposed)
+                return;
+
+            _accessPopover?.ClearCode();
+            _accessPopover?.Dispose();
+            _accessPopover = new AccessCodePopover();
+            _accessPopover.FormClosed += (_, _) =>
+            {
+                _accessPopover?.ClearCode();
+                _accessPopover = null;
+            };
+            _accessPopover.ShowResult(result, button, this);
+            Note("Código de acesso do MausBot exibido.");
+        }
+        catch (Exception)
+        {
+            Note("Não foi possível buscar o código de acesso.");
+        }
+        finally
+        {
+            button.Text = previous;
+            button.Enabled = true;
+            _stats.RequestImmediate();
+        }
     }
 
     private async Task ShowOutputAsync(string title, Func<Task<RemoteCommandResult>> action)

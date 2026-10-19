@@ -14,6 +14,7 @@ public sealed class ZButton : Control, IButtonControl
     private string _glyph = "";
     private bool _iconOnly;
     private bool _compact;
+    private bool _accentForeground;
     private bool _hover;
     private bool _pressed;
     private DialogResult _dialogResult = DialogResult.None;
@@ -62,6 +63,13 @@ public sealed class ZButton : Control, IButtonControl
             Height = LogicalToDeviceUnits(value ? 28 : 32);
             Invalidate();
         }
+    }
+
+    /// <summary>When true, label/glyph use <see cref="Palette.Accent"/> (e.g. MausBot access code).</summary>
+    public bool AccentForeground
+    {
+        get => _accentForeground;
+        set { _accentForeground = value; Invalidate(); }
     }
 
     public DialogResult DialogResult
@@ -182,7 +190,7 @@ public sealed class ZButton : Control, IButtonControl
 
     private (Color Bg, Color Fg, Color Border) ResolveColors(Palette p)
     {
-        return _variant switch
+        var (bg, fg, border) = _variant switch
         {
             ZButtonVariant.Primary => (
                 _hover ? p.AccentHover : p.Accent,
@@ -201,6 +209,9 @@ public sealed class ZButton : Control, IButtonControl
                 p.Text,
                 p.Stroke2)
         };
+        if (_accentForeground && _variant != ZButtonVariant.Primary)
+            fg = _hover ? p.AccentHover : p.Accent;
+        return (bg, fg, border);
     }
 
     private void Recalc()

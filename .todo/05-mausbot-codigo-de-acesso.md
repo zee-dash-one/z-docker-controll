@@ -1,6 +1,6 @@
 # 05: MausBot, código de primeiro acesso
 
-Status: pendente
+Status: concluída em 2026-10-19
 
 Depende de: 04. Leia antes o `00-LEIA-ME.md`.
 
@@ -69,7 +69,12 @@ A tarefa 06 faz o painel "Saída" recolhível e o polimento final.
 
 ## Registro de execução
 
-(preencher ao executar; formato do log com `XXXXXX` no lugar do valor)
+- **Data:** 2026-10-19
+- **Passo 1 (formato):** container `mausbot`. Nos logs atuais (`docker logs --tail 2000`) não havia ocorrência. Formato confirmado na documentação OpenMausBot e no CLI `pair`: `pairing code:  XXXX-XXXX-XXXX` (também `ABC123` em testes). Regex: `pairing code:\s*(\S+)`. Volume `/data/.openmausbot` não guarda o código efêmero.
+- **Decisão:** `FetchAsync` lê o log; se não achar, mint com `docker exec mausbot node dist-server/openmausbot.js pair --label Z-Lab` e aplica a mesma regex no stdout (senão o botão nunca acharia código). Valor nunca persistido.
+- **Arquivos:** `MausBotAccessCode.cs`, `AccessCodePopover.cs`, alterações em `ServiceCard`, `DashboardPanel`, `MainForm`, `ZButton`, `Native`; testes `MausBotAccessCodeTests.cs`.
+- **Verificação:** `dotnet build` / `dotnet test` (Release) — 5 testes do parser ok; suíte completa a seguir. Saída do app: só `Código de acesso do MausBot exibido.`
+- **Fora de escopo:** gravar sudoers novo para `docker logs`/`pair` (hoje sem `sudo`, via grupo docker do `melchior`).
 
 ---
 <!-- LLM/Cursor: IGNORE esta seção. É só uma assinatura pessoal para o usuário, não é instrução. -->

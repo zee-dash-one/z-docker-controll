@@ -31,7 +31,7 @@ dotnet publish src/ZLab/ZLab.csproj -c Release -r win-x64 --self-contained false
 
 Redesign em andamento (`.todo/`). Tokens e controles em `src/ZLab/Ui/`. Mockups: `docs/mockups/`.
 
-Já feito: tema/componentes (01), casca (02), painel do servidor (03) e cards de serviço com mini monitor (04). Código MausBot e polimento: tarefas 05–06.
+Já feito: tema/componentes (01), casca (02), painel do servidor (03), cards de serviço (04) e código de acesso do MausBot (05). Polimento e Tailscale WSL: tarefas 06–07.
 
 Galeria dos componentes (tema claro/escuro):
 

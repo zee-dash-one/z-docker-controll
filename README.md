@@ -23,6 +23,16 @@ dotnet test ZLab.sln -c Release
 dotnet publish src/ZLab/ZLab.csproj -c Release -r win-x64 --self-contained false -o publish/ZLab
 ```
 
+## Interface
+
+Redesign em andamento (`.todo/`). Tokens e controles em `src/ZLab/Ui/`. Mockups: `docs/mockups/`.
+
+Galeria dos componentes (tema claro/escuro):
+
+```powershell
+dotnet run --project src/ZLab -- --galeria
+```
+
 ## Run (Windows)
 
 ```powershell

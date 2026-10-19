@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Z-Lab — mockup do redesign (valores de EXEMPLO)</title>
+<!--
+  Mockup visual do Z-Lab (WinForms .NET 8). Alvo visual, não código de produção.
+  Estados via hash da URL:  #escuro-com  #escuro-sem  #claro-com  #claro-sem
+  Todos os números são EXEMPLOS. Ícones aqui são SVG só para o mockup;
+  no app use a fonte "Segoe Fluent Icons" (códigos em .todo/01).
+-->
+<style>
+:root{
+  /* ===== tokens tema ESCURO ===== */
+  --bg:#0F1115; --surface:#171A21; --surface2:#1E222B; --surface3:#252A35;
+  --stroke:#2A2F3A; --stroke2:#343B48;
+  --text:#E8EAED; --text2:#A1A9B8; --text3:#6B7383;
+  --accent:#4C9AFF; --accentHover:#6AADFF; --onAccent:#0B1220; --accentSoft:rgba(76,154,255,.14);
+  --ok:#22C55E; --okSoft:rgba(34,197,94,.14);
+  --warn:#F5A524; --warnSoft:rgba(245,165,36,.14);
+  --bad:#F0524F; --badSoft:rgba(240,82,79,.14);
+  --muted:#8B93A3; --mutedSoft:rgba(139,147,163,.14);
+  --track:#2A2F3A; --title:#0B0D11;
+  --shadow:0 1px 2px rgba(0,0,0,.35);
+}
+body.claro{
+  /* ===== tokens tema CLARO ===== */
+  --bg:#F3F4F7; --surface:#FFFFFF; --surface2:#F7F8FA; --surface3:#EEF0F4;
+  --stroke:#E3E6EC; --stroke2:#D5D9E1;
+  --text:#14171F; --text2:#4B5363; --text3:#8A92A2;
+  --accent:#2563EB; --accentHover:#1D4ED8; --onAccent:#FFFFFF; --accentSoft:rgba(37,99,235,.10);
+  --ok:#16A34A; --okSoft:rgba(22,163,74,.12);
+  --warn:#D97706; --warnSoft:rgba(217,119,6,.12);
+  --bad:#DC2626; --badSoft:rgba(220,38,38,.10);
+  --muted:#6B7383; --mutedSoft:rgba(107,115,131,.12);
+  --track:#E6E9EF; --title:#E9EBEF;
+  --shadow:0 1px 2px rgba(16,24,40,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1280px;height:800px;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:"Segoe UI Variable Text","Segoe UI",Inter,"Noto Sans",sans-serif;font-size:13px;line-height:1.35;-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+/* barra de título do Windows (nativa no app) */
+.titlebar{height:32px;background:var(--title);display:flex;align-items:center;padding-left:12px;gap:8px;font-size:12px;color:var(--text2);border-bottom:1px solid var(--stroke)}
+.titlebar .logo{width:16px;height:16px;border-radius:4px;background:linear-gradient(135deg,var(--accent),#8B5CF6);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center}
+.titlebar .win{margin-left:auto;display:flex}
+.titlebar .win span{width:46px;height:32px;display:grid;place-items:center;color:var(--text2)}
+/* cabeçalho */
+.header{height:60px;display:flex;align-items:center;padding:0 24px;gap:16px;background:var(--surface);border-bottom:1px solid var(--stroke)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .mark{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#8B5CF6);display:grid;place-items:center;color:#fff;font-weight:700;font-size:15px}
+.brand b{font-size:16px;font-weight:600}
+.brand small{display:block;font-size:12px;color:var(--text3);margin-top:-1px}
+.chip{display:flex;align-items:center;gap:8px;height:28px;padding:0 12px;border-radius:999px;background:var(--surface2);border:1px solid var(--stroke);color:var(--text2);font-size:12px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px var(--okSoft)}
+.dot.off{background:var(--muted);box-shadow:0 0 0 3px var(--mutedSoft)}
+.spacer{flex:1}
+.group{display:flex;align-items:center;gap:8px}
+.vsep{width:1px;height:28px;background:var(--stroke)}
+.btn{height:32px;padding:0 12px;border-radius:6px;border:1px solid var(--stroke2);background:var(--surface2);color:var(--text);display:inline-flex;align-items:center;gap:8px;font:inherit;font-weight:500;white-space:nowrap}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--onAccent)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--text2)}
+.btn.danger{color:var(--bad)}
+.btn[disabled]{opacity:.38}
+.ibtn{width:32px;height:32px;border-radius:6px;display:grid;place-items:center;color:var(--text2);border:1px solid transparent;background:transparent}
+.ibtn.box{border-color:var(--stroke2);background:var(--surface2)}
+.ibtn.danger{color:var(--bad)}
+.ibtn.ok{color:var(--ok)}
+.ibtn[disabled]{opacity:.3}
+/* conteúdo */
+.main{padding:20px 24px 0;height:calc(800px - 32px - 60px - 40px);overflow:hidden}
+.sectionhead{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.sectionhead h2{font-size:15px;font-weight:600}
+.sectionhead .sub{color:var(--text3);font-size:12px;display:flex;gap:12px;align-items:center}
+.sectionhead .sub span{display:inline-flex;align-items:center;gap:6px}
+.tiles{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:24px}
+.tile{background:var(--surface);border:1px solid var(--stroke);border-radius:12px;padding:14px 16px 14px;box-shadow:var(--shadow);height:118px;display:flex;flex-direction:column}
+.tile .lbl{display:flex;align-items:center;gap:8px;color:var(--text2);font-size:12px;font-weight:500}
+.tile .lbl .pct{margin-left:auto;font-weight:600;color:var(--text)}
+.tile .big{font-size:24px;font-weight:600;letter-spacing:-.3px;margin-top:8px;line-height:1.1}
+.tile .big small{font-size:13px;font-weight:500;color:var(--text3);letter-spacing:0;margin-left:2px}
+.tile .cap{color:var(--text3);font-size:12px;margin-top:2px}
+.tile .foot{margin-top:auto}
+.tile.empty{border-style:dashed;background:transparent;box-shadow:none}
+.tile.empty .big{color:var(--text3);font-size:17px;margin-top:12px}
+.bar{height:6px;border-radius:3px;background:var(--track);overflow:hidden}
+.bar>i{display:block;height:100%;border-radius:3px;background:var(--ok)}
+.bar.thin{height:4px}
+.spark{width:100%;height:30px;display:block}
+/* serviços */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.card{background:var(--surface);border:1px solid var(--stroke);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px 10px;height:184px;display:flex;flex-direction:column}
+.card .top{display:flex;align-items:center;gap:10px}
+.avatar{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;background:var(--accentSoft);color:var(--accent)}
+.card .name{font-weight:600;font-size:14px}
+.card .link{display:flex;align-items:center;gap:4px;color:var(--accent);font-size:12px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:250px}
+.card .link svg{width:12px;height:12px}
+.pill{margin-left:auto;align-self:flex-start;height:22px;padding:0 10px 0 8px;border-radius:999px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;background:var(--okSoft);color:var(--ok)}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.stop{background:var(--mutedSoft);color:var(--muted)}
+.pill.err{background:var(--badSoft);color:var(--bad)}
+.stats{margin-top:12px;display:grid;grid-template-columns:64px 1fr 116px;row-gap:8px;column-gap:10px;align-items:center;font-size:12px}
+.stats .k{color:var(--text3)}
+.stats .v{color:var(--text2);text-align:right}
+.stats .full{grid-column:2 / 4;color:var(--text2)}
+.card .actions{margin-top:auto;display:flex;align-items:center;gap:2px;border-top:1px solid var(--stroke);padding-top:8px}
+.card .actions .spacer{flex:1}
+.btn.sm{height:28px;padding:0 10px;font-size:12px}
+.card.stopped .stats{opacity:.9}
+.stoppedmsg{margin-top:12px;color:var(--text3);font-size:12px;display:flex;align-items:center;gap:8px;height:68px;border:1px dashed var(--stroke2);border-radius:8px;justify-content:center}
+/* log */
+.log{position:absolute;left:0;right:0;bottom:0;height:40px;background:var(--surface);border-top:1px solid var(--stroke);display:flex;align-items:center;padding:0 16px 0 24px;gap:12px;font-size:12px;color:var(--text2)}
+.log b{font-weight:600;color:var(--text)}
+.log code{font-family:"Cascadia Mono",Consolas,"Noto Sans Mono",monospace;font-size:12px;color:var(--text2)}
+.log .time{color:var(--text3)}
+.badge{height:18px;padding:0 6px;border-radius:999px;background:var(--surface3);color:var(--text2);font-size:11px;display:inline-grid;place-items:center}
+/* popover código de acesso */
+.popover{position:absolute;width:340px;background:var(--surface);border:1px solid var(--stroke2);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.35);padding:16px}
+.popover h3{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+.popover p{color:var(--text3);font-size:12px;margin-top:4px}
+.codebox{margin-top:12px;display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--stroke);border-radius:8px;padding:8px 8px 8px 14px}
+.codebox code{font-family:"Cascadia Mono",Consolas,"Noto Sans Mono",monospace;font-size:20px;letter-spacing:3px;font-weight:600;flex:1}
+.popover .meta{margin-top:10px;font-size:11px;color:var(--text3)}
+/* estado sem sessão */
+.emptystate{height:100%;display:grid;place-items:center}
+.es{width:520px;text-align:center;background:var(--surface);border:1px solid var(--stroke);border-radius:16px;padding:40px 40px 32px;box-shadow:var(--shadow)}
+.es .ico{width:64px;height:64px;border-radius:16px;margin:0 auto 16px;display:grid;place-items:center;background:var(--accentSoft);color:var(--accent)}
+.es .ico svg{width:30px;height:30px;stroke-width:1.5}
+.es h1{font-size:20px;font-weight:600}
+.es p{color:var(--text2);margin-top:8px;font-size:13px}
+.es .row{margin-top:24px;display:flex;justify-content:center;gap:8px}
+.es .hint{margin-top:24px;padding-top:16px;border-top:1px solid var(--stroke);color:var(--text3);font-size:12px;display:flex;justify-content:center;align-items:center;gap:10px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+ <defs>
+  <symbol id="i-server" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01M11 7.5h6M11 16.5h6"/></symbol>
+  <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/></symbol>
+  <symbol id="i-ram" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="1.5"/><path d="M7 10v4M11 10v4M15 10v4M6 17v2M10 17v2M14 17v2M18 17v2"/></symbol>
+  <symbol id="i-disk" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 14h18M7 17h.01M11 17h.01"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="9" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"/><path d="M15.5 6.2a3 3 0 0 1 0 5.6M17.5 14.6c1.6.6 2.7 2 3 4.4"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v8"/><path d="M6.6 6.6a7.5 7.5 0 1 0 10.8 0"/></symbol>
+  <symbol id="i-restart" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10-6.5z"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2"/></symbol>
+  <symbol id="i-logs" viewBox="0 0 24 24"><path d="M5 4h10l4 4v12H5z"/><path d="M9 12h6M9 16h6M9 8h3"/></symbol>
+  <symbol id="i-open" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18.5" cy="12" r="1.2"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M16 7l2 2M14 9l2 2"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></symbol>
+  <symbol id="i-login" viewBox="0 0 24 24"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M4 12h11M11 8l4 4-4 4"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4"/><path d="M9 12h11M16 8l4 4-4 4"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+  <symbol id="i-chevup" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v4.5h-4.5"/></symbol>
+  <symbol id="i-router" viewBox="0 0 24 24"><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 16.5h.01M11 16.5h.01M8 9.5a6 6 0 0 1 8 0M5.5 7a9.5 9.5 0 0 1 13 0"/></symbol>
+  <symbol id="i-bot" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16.5h5"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.5c0 4.5-3.2 8.2-7.5 9.5-4.3-1.3-7.5-5-7.5-9.5V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+ </defs>
+</svg>
+
+<div class="titlebar"><div class="logo">Z</div>Z-Lab<div class="win"><span>&#x2013;</span><span>&#x25A1;</span><span>&#x2715;</span></div></div>
+
+<div class="header">
+  <div class="brand"><div class="mark">Z</div><div><b>Z-Lab</b><small>Painel do z-server-01</small></div></div>
+  <div class="chip on"><span class="dot"></span><span class="num">melchior@192.168.0.112</span><span style="color:var(--text3)">· Sessão aberta</span></div>
+  <div class="chip off"><span class="dot off"></span>Sem sessão</div>
+  <div class="spacer"></div>
+  <div class="group" title="Sessão">
+    <button class="btn primary" id="bEntrar"><svg class="i"><use href="#i-login"/></svg>Entrar</button>
+    <button class="btn" id="bEncerrar"><svg class="i"><use href="#i-logout"/></svg>Encerrar sessão</button>
+  </div>
+  <div class="vsep"></div>
+  <button class="ibtn" id="bTema" title="Tema claro/escuro"><svg class="i"><use href="#i-sun"/></svg></button>
+  <button class="btn ghost" title="Fecha o app inteiro, inclusive o ícone da bandeja"><svg class="i"><use href="#i-close"/></svg>Fechar Z-Lab</button>
+</div>
+
+<!-- ===================== ESTADO COM SESSÃO ===================== -->
+<div class="main on">
+  <div class="sectionhead">
+    <h2>Servidor</h2>
+    <div class="sub"><span>z-server-01</span><span>·</span><span>Ubuntu 26.04</span><span>·</span><span>Intel i3-4170, 4 núcleos</span></div>
+    <div class="spacer"></div>
+    <div class="group" title="Energia do servidor">
+      <button class="btn sm" disabled><svg class="i"><use href="#i-power"/></svg>Ligar</button>
+      <button class="btn sm"><svg class="i"><use href="#i-restart"/></svg>Reiniciar</button>
+      <button class="btn sm danger"><svg class="i"><use href="#i-power"/></svg>Desligar</button>
+    </div>
+  </div>
+
+  <div class="tiles">
+    <div class="tile">
+      <div class="lbl"><svg class="i"><use href="#i-cpu"/></svg>CPU</div>
+      <div class="big num">7<small>%</small></div>
+      <div class="cap">média dos 4 núcleos</div>
+      <div class="foot"><svg class="spark" viewBox="0 0 160 30" preserveAspectRatio="none" id="spark"></svg></div>
+    </div>
+    <div class="tile">
+      <div class="lbl"><svg class="i"><use href="#i-ram"/></svg>Memória<span class="pct num">9%</span></div>
+      <div class="big num">1,4<small>GB</small></div>
+      <div class="cap num">de 15 GB · 14 GB livres</div>
+      <div class="foot"><div class="bar"><i style="width:9%"></i></div></div>
+    </div>
+    <div class="tile">
+      <div class="lbl"><svg class="i"><use href="#i-disk"/></svg>Disco do sistema<span class="pct num">26%</span></div>
+      <div class="big num">12<small>GB</small></div>
+      <div class="cap num">de 49 GB · 74% livre</div>
+      <div class="foot"><div class="bar"><i style="width:26%"></i></div></div>
+    </div>
+    <div class="tile">
+      <div class="lbl"><svg class="i"><use href="#i-disk"/></svg>Disco Docker<span class="pct num">1%</span></div>
+      <div class="big num">91<small>MB</small></div>
+      <div class="cap num">de 147 GB · 99% livre</div>
+      <div class="foot"><div class="bar"><i style="width:1.2%"></i></div></div>
+    </div>
+    <div class="tile empty">
+      <div class="lbl"><svg class="i"><use href="#i-disk"/></svg>Dados <span style="color:var(--text3);margin-left:-4px">/data</span></div>
+      <div class="big">Não instalado</div>
+      <div class="cap">HD de 500 GB ainda não montado</div>
+    </div>
+    <div class="tile">
+      <div class="lbl"><svg class="i"><use href="#i-clock"/></svg>Ligado há</div>
+      <div class="big num">11<small>h</small> 4<small>min</small></div>
+      <div class="cap">desde ontem, 15:26</div>
+      <div class="foot" style="display:flex;align-items:center;gap:6px;color:var(--text2);font-size:12px"><svg class="i" style="width:14px;height:14px"><use href="#i-users"/></svg>2 usuários conectados</div>
+    </div>
+  </div>
+
+  <div class="sectionhead">
+    <h2>Serviços</h2>
+    <div class="sub"><span class="num">6 serviços</span><span>·</span><span style="color:var(--ok)" class="num">5 no ar</span><span>·</span><span class="num">1 parado</span></div>
+    <div class="spacer"></div>
+    <span style="color:var(--text3);font-size:12px">atualizado há 2 s</span>
+    <button class="btn sm ghost"><svg class="i"><use href="#i-refresh"/></svg>Atualizar</button>
+  </div>
+  <div class="cards" id="cards"></div>
+</div>
+
+<!-- ===================== ESTADO SEM SESSÃO ===================== -->
+<div class="main off emptystate">
+  <div class="es">
+    <div class="ico"><svg class="i"><use href="#i-server"/></svg></div>
+    <h1>Nenhuma sessão aberta</h1>
+    <p>Clique em <b>Entrar</b> (no alto, à direita) para conectar ao <span style="white-space:nowrap">z-server-01</span>.<br>O painel do servidor e os serviços aparecem depois do login.</p>
+    <div class="hint"><span class="dot off"></span>z-server-01 não responde<button class="btn sm"><svg class="i"><use href="#i-power"/></svg>Ligar servidor</button></div>
+  </div>
+</div>
+
+<!-- popover do MausBot (só no estado com sessão) -->
+<div class="popover on" id="pop" style="left:892px;top:536px">
+  <h3><svg class="i" style="color:var(--accent)"><use href="#i-key"/></svg>Código de primeiro acesso</h3>
+  <p>Lido agora do log do container MausBot. Não é salvo em lugar nenhum.</p>
+  <div class="codebox"><code class="num">48 31 92</code><button class="btn sm primary"><svg class="i"><use href="#i-copy"/></svg>Copiar</button></div>
+  <div class="meta">Exemplo de código. Use em https://mausbot-serve.mandrill-court.ts.net</div>
+</div>
+
+<div class="log">
+  <svg class="i" style="color:var(--text3)"><use href="#i-logs"/></svg><b>Saída</b><span class="badge num on">12</span>
+  <span class="time num on">02:30:24</span><code class="on">Sessão aberta em melchior@192.168.0.112.</code>
+  <code class="off">Aguardando login.</code>
+  <div class="spacer"></div>
+  <button class="ibtn" title="Mostrar saída"><svg class="i"><use href="#i-chevup"/></svg></button>
+</div>
+
+<script>
+const svc=[
+ {n:"9Router",ic:"router",url:"http://192.168.0.112:20128",st:"ok",up:"Ativo há 2 d 4 h",rs:"0 reinícios",cpu:0.8,mem:"85 MB",memp:0.6},
+ {n:"OmniRoute",ic:"router",url:"http://192.168.0.112:20129",st:"ok",up:"Ativo há 2 d 4 h",rs:"0 reinícios",cpu:0.3,mem:"62 MB",memp:0.4},
+ {n:"MausBot",ic:"bot",url:"https://mausbot-serve.mandrill-court.ts.net",st:"ok",up:"Ativo há 6 h 12 min",rs:"1 reinício",cpu:2.1,mem:"312 MB",memp:2.0,code:true},
+ {n:"Tailscale zlab",ic:"shield",url:"https://zlab.mandrill-court.ts.net",st:"ok",up:"Ativo há 11 h 2 min",rs:"0 reinícios",cpu:0.1,mem:"28 MB",memp:0.2},
+ {n:"Tailscale 9Router",ic:"shield",url:"https://9router.mandrill-court.ts.net",st:"ok",up:"Ativo há 11 h 2 min",rs:"0 reinícios",cpu:0.1,mem:"24 MB",memp:0.2},
+ {n:"Tailscale MausBot",ic:"shield",url:"https://mausbot-serve.mandrill-court.ts.net",st:"stop"}
+];
+const ico=(id,cls="")=>`<svg class="i ${cls}"><use href="#i-${id}"/></svg>`;
+const fmt=v=>v.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1});
+document.getElementById("cards").innerHTML=svc.map(s=>{
+ const stop=s.st==="stop";
+ const pill=stop?'<span class="pill stop">Parado</span>':'<span class="pill">No ar</span>';
+ const body=stop?`<div class="stoppedmsg">${ico("stop")}Container parado · sem consumo</div>`:
+ `<div class="stats num">
+   <span class="k">Estado</span><span class="full">${s.up} · ${s.rs}</span>
+   <span class="k">CPU</span><div class="bar thin"><i style="width:${Math.max(s.cpu,2)}%"></i></div><span class="v">${fmt(s.cpu)}%</span>
+   <span class="k">Memória</span><div class="bar thin"><i style="width:${Math.max(s.memp,2)}%"></i></div><span class="v">${s.mem} de 15 GB</span>
+  </div>`;
+ const acts=`${stop?`<button class="ibtn ok" title="Subir">${ico("play")}</button>`:`<button class="ibtn" title="Parar">${ico("stop")}</button>`}
+   <button class="ibtn" title="Logs">${ico("logs")}</button>
+   ${s.code?`<button class="btn sm" style="margin-left:4px;color:var(--accent)">${ico("key")}Código de acesso</button>`:""}
+   <span class="spacer"></span>
+   <button class="ibtn" title="Abrir no navegador"${stop?" disabled":""}>${ico("open")}</button>
+   <button class="ibtn" title="Mais: Criar, Atualizar, Uso">${ico("more")}</button>`;
+ return `<div class="card${stop?" stopped":""}">
+  <div class="top"><div class="avatar">${ico(s.ic)}</div><div style="min-width:0"><div class="name">${s.n}</div>
+  <div class="link">${s.url.replace(/^https?:\/\//,"")}</div></div>${pill}</div>
+  ${body}<div class="actions">${acts}</div></div>`;
+}).join("");
+// sparkline CPU (exemplo, últimos 60 s)
+const d=[5,6,5,7,9,6,5,5,8,12,9,7,6,6,5,7,8,6,5,6,7,9,8,6,5,6,7,7];
+const W=160,H=30,max=25;
+const pts=d.map((v,i)=>[i*W/(d.length-1),H-2-(v/max)*(H-4)]);
+const line=pts.map(p=>p.join(",")).join(" ");
+document.getElementById("spark").innerHTML=
+ `<polygon points="0,${H} ${line} ${W},${H}" fill="var(--accentSoft)"/><polyline points="${line}" fill="none" stroke="var(--accent)" stroke-width="1.6" vector-effect="non-scaling-stroke"/>`;
+// estado via hash
+const h=(location.hash||"#escuro-com").slice(1);
+const claro=h.startsWith("claro"), com=!h.includes("sem");
+if(claro){document.body.classList.add("claro");document.querySelector("#bTema use").setAttribute("href","#i-moon");}
+document.querySelectorAll(com?".off":".on").forEach(e=>e.classList.add("hidden"));
+document.getElementById("bEntrar").disabled=com;
+document.getElementById("bEntrar").classList.toggle("primary",!com);
+document.getElementById("bEncerrar").disabled=!com;
+if(!h.includes("codigo")) document.getElementById("pop").classList.add("hidden");
+</script>
+</body>
+</html>

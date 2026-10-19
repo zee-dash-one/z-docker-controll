@@ -1,16 +1,24 @@
 using ZLab.Services;
+using ZLab.Ui;
 
 namespace ZLab;
 
 internal static class Program
 {
     [STAThread]
-    private static void Main()
+    private static void Main(string[] args)
     {
+        Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
         ApplicationConfiguration.Initialize();
-        Application.SetHighDpiMode(HighDpiMode.SystemAware);
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
+
+        if (args.Any(a => string.Equals(a, "--galeria", StringComparison.OrdinalIgnoreCase)))
+        {
+            ThemeManager.Apply(ThemeMode.Dark);
+            Application.Run(new ComponentGalleryForm());
+            return;
+        }
 
         var runtimeDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -31,6 +39,7 @@ internal static class Program
             return;
         }
 
+        ThemeManager.Apply(ThemeMode.System);
         var session = new SshSession();
         var monitor = new ServerMonitor(session, settings);
         var watcher = new StatusWatcher(monitor);

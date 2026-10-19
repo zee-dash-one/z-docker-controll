@@ -26,7 +26,7 @@ A suíte `dotnet test ZLab.sln -c Release` no SDK do WSL passou (109 testes), in
 10. **Cópia da senha dentro da SSH.NET** vive até o `Dispose` do cliente. O `char[]` do Z-Lab é zerado ao encerrar a sessão; a biblioteca guarda a cópia dela.
 11. **Health HTTP/TCP** continua fora, como na SPEC antiga (RF20).
 12. **IPv6 no pull.** O Atualizar roda `docker compose pull` no servidor. Se o daemon de lá preferir AAAA, o stderr volta no painel. O script `fix-wsl-docker-ipv4.sh` não entra mais nesse caminho.
-13. **Um Tailscale no WSL, depois da limpeza.** Tarefa [`.todo/07-tailscale-wsl-windows.md`](../.todo/07-tailscale-wsl-windows.md): um container userspace, SOCKS5 só em `127.0.0.1:1055`, sem app no Windows e sem rota que tome o lugar do NetExtender. 9Router, OmniRoute e MausBot não voltam para o WSL.
+13. **Um Tailscale no WSL, depois da limpeza.** Compose pronto em [`wsl/tailscale-windows/`](../wsl/tailscale-windows/). Tarefa [`.todo/07-tailscale-wsl-windows.md`](../.todo/07-tailscale-wsl-windows.md) **bloqueada** enquanto o Docker do WSL ainda tiver `mausbot`/`9router`/`omniroute`. Depois do wipe + `TS_AUTHKEY` no `.env`, `compose up` e `curl.exe --socks5 127.0.0.1:1055`.
 
 ## Cobertura
 

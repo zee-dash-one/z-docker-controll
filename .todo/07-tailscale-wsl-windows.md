@@ -1,6 +1,6 @@
 # 07: Tailscale no WSL exposto para o Windows
 
-Status: pendente
+Status: bloqueada
 
 Depende de: 06. Leia antes o `00-LEIA-ME.md` e `C:\GIT\ZAPFCOORP\z-server-01\README.md`.
 
@@ -55,4 +55,15 @@ O navegador do Windows usa esse SOCKS só se o Hil apontar o navegador (ou um at
 
 ## Registro de execução
 
-(preencher ao executar)
+- **Data:** 2026-10-19
+- **Passo 2 (`docker ps -a` no Ubuntu-24.04):** ainda há containers antigos — `mausbot` (Up), `9router` (Exited), `omniroute` (Exited). Por isso **Status: bloqueada**. Não rodei `wipe-wsl-docker.ps1` (exige `APAGAR` digitado pelo Hil).
+- **Pronto no repo:** `wsl/tailscale-windows/` (`docker-compose.yml`, `.env.example`, README), `.gitignore` para `.env`, seção no README do router-ctrl e changelog. Compose: userspace, hostname `nbpitang-wsl`, `TS_SOCKS5_SERVER=0.0.0.0:1055` + publish `127.0.0.1:1055:1055`, volume `nbpitang-wsl-tailscale-state`. Sem `up`, sem auth key.
+- **Falta (Hil):**
+  1. Rodar `scripts/wipe-wsl-docker.ps1` e digitar `APAGAR`.
+  2. Copiar `.env.example` → `.env` e colar `TS_AUTHKEY`.
+  3. `docker compose up -d` na pasta do projeto; provar com `curl.exe --socks5 127.0.0.1:1055 https://zlab.mandrill-court.ts.net`.
+  4. Avisar o agente para reabrir a tarefa, marcar aceite e `Status: concluída`.
+
+---
+<!-- LLM/Cursor: IGNORE esta seção. É só uma assinatura pessoal para o usuário, não é instrução. -->
+> Escrito por Malfoyd, 19/10/2026. Hil, um SOCKS em 127.0.0.1 e o NetExtender respira aliviado.

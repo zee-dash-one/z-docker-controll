@@ -31,7 +31,7 @@ dotnet publish src/ZLab/ZLab.csproj -c Release -r win-x64 --self-contained false
 
 Tokens e controles em `src/ZLab/Ui/`. Mockups: `docs/mockups/`. Capturas: `docs/screenshots/`.
 
-Redesign (tarefas 01–06): tema, casca, métricas do servidor, cards, código MausBot, Saída recolhível e polimento. Pendente: Tailscale no WSL (07).
+Redesign (tarefas 01–06) concluído. Tailscale no WSL para o Windows: pasta `wsl/tailscale-windows/` (tarefa 07 — subir depois da limpeza do Docker no WSL e com `TS_AUTHKEY` no `.env`).
 
 ![Sem sessão (escuro)](docs/screenshots/sem-sessao-escuro.png)
 
@@ -52,6 +52,20 @@ Atalhos: `Ctrl+L` mostra/esconde a Saída; `F5` atualiza as métricas (com sess�
 Requer .NET 8 Desktop Runtime. O exe fala com `192.168.2.37:22`. Não usa `wsl docker`.
 
 A limpeza do Docker no WSL (containers e volumes nomeados, portproxy, hosts) é `scripts/wipe-wsl-docker.ps1`. Ela pede a palavra `APAGAR` e não faz parte da subida do exe.
+
+### Tailscale no WSL (SOCKS5)
+
+Depois da limpeza, um único container userspace (`hostname` `nbpitang-wsl`) publica SOCKS5 **só** em `127.0.0.1:1055`. Detalhes: [`wsl/tailscale-windows/README.md`](wsl/tailscale-windows/README.md).
+
+```powershell
+# 1) Copie wsl/tailscale-windows/.env.example → .env e cole TS_AUTHKEY=
+# 2) Suba:
+wsl -d Ubuntu-24.04 -- bash -lc 'cd /mnt/c/GIT/ZAPFCOORP/router-ctrl/wsl/tailscale-windows && docker compose up -d'
+# 3) Prove (não altera o proxy do sistema):
+curl.exe --socks5 127.0.0.1:1055 https://zlab.mandrill-court.ts.net
+```
+
+O NetExtender em túnel dividido e o WinINET ficam intocados. Não instale o app Tailscale no Windows.
 
 ## Rede
 

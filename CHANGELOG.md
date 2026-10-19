@@ -2,6 +2,12 @@
 
 ## 2026-10-19
 
+### todo 07: Tailscale WSL → SOCKS5 (compose pronto; limpeza WSL pendente)
+
+- Projeto `wsl/tailscale-windows/`: userspace, hostname `nbpitang-wsl`, publish `127.0.0.1:1055:1055`, volume `nbpitang-wsl-tailscale-state`.
+- `.env.example` com `TS_AUTHKEY=` vazia; `.env` no `.gitignore`.
+- **Bloqueada** enquanto o Docker do WSL ainda tiver `mausbot` / `9router` / `omniroute` — rode `scripts/wipe-wsl-docker.ps1` (digite `APAGAR`) e cole a auth key antes do `compose up`.
+
 ### todo 06: Saída recolhível e polimento
 
 - `OutputPanel` + `OutputBuffer` (máx. 1000 linhas, badge de não lidas, Copiar/Limpar, Ctrl+L).

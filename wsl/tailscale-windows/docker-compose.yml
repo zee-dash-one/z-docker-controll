@@ -1,0 +1,29 @@
+# Tailscale userspace no WSL (Ubuntu-24.04) → SOCKS5 só em 127.0.0.1:1055 no Windows.
+# Não é o sidecar do z-server-01 (zlab / 9router-serve / mausbot-serve).
+# Não altera proxy do sistema nem NetExtender. Sem Funnel, exit node ou subnet router.
+name: nbpitang-wsl-tailscale
+
+services:
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: nbpitang-wsl-tailscale
+    hostname: nbpitang-wsl
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "true"
+      TS_HOSTNAME: nbpitang-wsl
+      # Escuta em todas as interfaces *dentro* do container; o publish abaixo
+      # restringe o host a 127.0.0.1 (nada em 0.0.0.0 no Windows).
+      TS_SOCKS5_SERVER: "0.0.0.0:1055"
+      TS_AUTH_ONCE: "true"
+    volumes:
+      - nbpitang-wsl-tailscale-state:/var/lib/tailscale
+    ports:
+      - "127.0.0.1:1055:1055"
+    # userspace: sem /dev/net/tun, sem --tun kernel
+
+volumes:
+  nbpitang-wsl-tailscale-state:
+    name: nbpitang-wsl-tailscale-state

@@ -1,1 +1,6 @@
 .zteam/config.json
+
+# Segredos locais (Tailscale WSL SOCKS5 e similares)
+wsl/tailscale-windows/.env
+**/.env
+!**/.env.example

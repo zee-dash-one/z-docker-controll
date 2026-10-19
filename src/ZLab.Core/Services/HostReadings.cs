@@ -1,15 +1,5 @@
 namespace ZLab.Services;
 
-public sealed class HostReadings
-{
-    public string Uptime { get; init; } = "";
-    public string Load { get; init; } = "";
-    public string Memory { get; init; } = "";
-    public string DiskRoot { get; init; } = "";
-    public string DiskDocker { get; init; } = "";
-    public string DiskData { get; init; } = "";
-}
-
 public sealed class RemoteCommandResult
 {
     public int ExitCode { get; init; }

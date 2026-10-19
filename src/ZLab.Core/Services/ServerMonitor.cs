@@ -4,7 +4,6 @@ public sealed class ServerPoll
 {
     public required bool Connected { get; init; }
     public required IReadOnlyDictionary<string, ContainerStatusKind> Statuses { get; init; }
-    public HostReadings? Host { get; init; }
 }
 
 /// <summary>
@@ -35,15 +34,13 @@ public sealed class ServerMonitor
             return new ServerPoll
             {
                 Connected = false,
-                Statuses = UnknownStatuses(),
-                Host = null
+                Statuses = UnknownStatuses()
             };
         }
 
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var host = await Task.Run(() => ReadHost(), cancellationToken).ConfigureAwait(false);
             var statuses = new Dictionary<string, ContainerStatusKind>(StringComparer.Ordinal);
             foreach (var service in RemoteCommands.Services)
             {
@@ -59,8 +56,7 @@ public sealed class ServerMonitor
             return new ServerPoll
             {
                 Connected = true,
-                Statuses = statuses,
-                Host = host
+                Statuses = statuses
             };
         }
         finally
@@ -124,41 +120,6 @@ public sealed class ServerMonitor
         {
             _gate.Release();
         }
-    }
-
-    private HostReadings ReadHost()
-    {
-        return new HostReadings
-        {
-            Uptime = Text(RemoteCommands.Uptime(), false),
-            Load = Text(RemoteCommands.LoadAvg(), false),
-            Memory = Text(RemoteCommands.Memory(), false),
-            DiskRoot = Text(RemoteCommands.DiskRoot(), false),
-            DiskDocker = Text(RemoteCommands.DiskDocker(), false),
-            DiskData = Text(RemoteCommands.DiskData(), true)
-        };
-    }
-
-    private string Text(string command, bool missingIsAbsence)
-    {
-        var result = _session.Run(command, TimeSpan.FromSeconds(20));
-        if (!result.Succeeded)
-        {
-            if (missingIsAbsence)
-                return "ausente";
-            var err = result.CombinedText();
-            return err.Length == 0 ? "falhou" : Trim(err);
-        }
-
-        return Trim(result.StdOut);
-    }
-
-    private static string Trim(string text)
-    {
-        text = (text ?? "").Trim();
-        if (text.Length > 500)
-            text = text[..500] + "…";
-        return text;
     }
 
     private static Dictionary<string, ContainerStatusKind> UnknownStatuses()

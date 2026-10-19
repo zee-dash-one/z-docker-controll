@@ -7,6 +7,7 @@ internal sealed class MainForm : Form
 {
     private readonly ServerMonitor _monitor;
     private readonly StatusWatcher _watcher;
+    private readonly StatsPoller _stats;
     private readonly Func<Task> _wakeAsync;
     private readonly Func<Task> _loginAsync;
     private readonly Action _endSession;
@@ -30,6 +31,7 @@ internal sealed class MainForm : Form
     public MainForm(
         ServerMonitor monitor,
         StatusWatcher watcher,
+        StatsPoller stats,
         Func<Task> wakeAsync,
         Func<Task> loginAsync,
         Action endSession,
@@ -38,6 +40,7 @@ internal sealed class MainForm : Form
     {
         _monitor = monitor;
         _watcher = watcher;
+        _stats = stats;
         _wakeAsync = wakeAsync;
         _loginAsync = loginAsync;
         _endSession = endSession;
@@ -56,6 +59,8 @@ internal sealed class MainForm : Form
 
         ThemeManager.ThemeChanged += OnTheme;
         _watcher.SnapshotUpdated += OnSnapshot;
+        _stats.Snapshot += OnStats;
+        _stats.ErrorOnce += OnStatsError;
         ApplyThemeColors();
         ApplySessionState(SessionState.Disconnected);
         _ = ProbeServerAsync();
@@ -113,6 +118,8 @@ internal sealed class MainForm : Form
         {
             ThemeManager.ThemeChanged -= OnTheme;
             _watcher.SnapshotUpdated -= OnSnapshot;
+            _stats.Snapshot -= OnStats;
+            _stats.ErrorOnce -= OnStatsError;
             _probeTimer.Stop();
             _probeTimer.Dispose();
         }
@@ -258,6 +265,32 @@ internal sealed class MainForm : Form
         });
     }
 
+    private void OnStats(StatsSnapshot snapshot)
+    {
+        if (IsDisposed)
+            return;
+        void Apply()
+        {
+            if (_sessionState != SessionState.Connected)
+                return;
+            double? cpu = null;
+            if (snapshot.Host is not null)
+                cpu = _stats.Cpu.Percent(snapshot.Host.CpuTotal, snapshot.Host.CpuIdle);
+            var view = ServerTilesPresenter.From(snapshot.Host, cpu, DateTime.Now);
+            _dashboard.ApplyTiles(view, pushSpark: cpu is not null);
+        }
+
+        if (InvokeRequired)
+            BeginInvoke(Apply);
+        else
+            Apply();
+    }
+
+    private void OnStatsError(string message)
+    {
+        Note("Métricas: " + message);
+    }
+
     private void ApplySessionState(SessionState state)
     {
         _sessionState = state;
@@ -281,6 +314,9 @@ internal sealed class MainForm : Form
 
         _empty.SetServerResponds(_serverResponds);
         _empty.WakeButton.Enabled = !_busy && !_waking && !_serverResponds;
+
+        if (state != SessionState.Connected)
+            _dashboard.ClearMetrics();
     }
 
     private async Task ProbeServerAsync()

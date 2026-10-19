@@ -43,7 +43,8 @@ internal static class Program
         var session = new SshSession();
         var monitor = new ServerMonitor(session, settings);
         var watcher = new StatusWatcher(monitor);
-        using var tray = new TrayApp(session, monitor, watcher);
+        var stats = new StatsPoller(session);
+        using var tray = new TrayApp(session, monitor, watcher, stats);
         tray.Run();
     }
 }

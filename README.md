@@ -27,7 +27,7 @@ dotnet publish src/ZLab/ZLab.csproj -c Release -r win-x64 --self-contained false
 
 Redesign em andamento (`.todo/`). Tokens e controles em `src/ZLab/Ui/`. Mockups: `docs/mockups/`.
 
-Já feito: tema/componentes (01) e casca da janela com sessão, estado vazio e energia no painel Servidor (02). Painel de métricas e cards novos vêm nas tarefas 03–04.
+Já feito: tema/componentes (01), casca da janela (02) e painel do servidor com seis blocos de métricas + `zlab-stats.sh` (03). Cards de serviço vêm na tarefa 04.
 
 Galeria dos componentes (tema claro/escuro):
 

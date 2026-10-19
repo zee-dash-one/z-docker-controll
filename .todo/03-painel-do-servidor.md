@@ -1,6 +1,6 @@
 # 03: Painel do servidor (blocos de métricas)
 
-Status: pendente
+Status: concluída em 2026-10-19
 
 Depende de: 02. Leia antes o `00-LEIA-ME.md`.
 
@@ -130,7 +130,13 @@ A tarefa 04 acrescenta a seção de containers ao mesmo script e refaz os cards.
 
 ## Registro de execução
 
-(preencher ao executar)
+- Data: 2026-10-19
+- Criados: `scripts/zlab-stats.sh`, `.gitattributes`, `HostStats`/`DiskUsage`, `StatsParser`, `CpuUsageCalculator`, `DisplayFormat`, `StatsPoller`, `EmbeddedScripts`, `ServerTilesPresenter`, `MetricsRow` no `DashboardPanel`.
+- Alterados: `SshSession.RunScript`, `ServerMonitor` (remove leitura cru de host), removido `HostReadings`, `MainForm`/`TrayApp`/`Program` ligam o poller no login e param no Encerrar sessão.
+- Recurso embutido: `ZLab.Scripts.zlab-stats.sh`.
+- SSH live: `192.168.0.112:22` timeout (servidor desligado). Não validado `disk_docker` no host; unitários cobrem `absent` e o exemplo da tarefa.
+- Testes: StatsParser, CpuUsageCalculator, DisplayFormat, ServerTilesPresenter.
+- Removido: fluxo UI de `uptime`/`free`/`df` via `HostReadings`.
 
 ---
 <!-- LLM/Cursor: IGNORE esta seção. É só uma assinatura pessoal para o usuário, não é instrução. -->

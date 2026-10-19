@@ -11,7 +11,6 @@ public sealed class StatusNotifyEventArgs : EventArgs
 public sealed class StatusSnapshotEventArgs : EventArgs
 {
     public required IReadOnlyDictionary<string, ContainerStatusKind> Statuses { get; init; }
-    public HostReadings? Host { get; init; }
     public bool Connected { get; init; }
 }
 
@@ -185,7 +184,6 @@ public sealed class StatusWatcher : IDisposable
         SnapshotUpdated?.Invoke(this, new StatusSnapshotEventArgs
         {
             Statuses = LastStatuses,
-            Host = poll.Host,
             Connected = poll.Connected
         });
     }

@@ -119,6 +119,34 @@ public sealed class SshSession : IDisposable
         }
     }
 
+    /// <summary>
+    /// Runs a local script on the remote host via <c>bash -s</c> (stdin). Nothing is written to disk.
+    /// </summary>
+    public RemoteCommandResult RunScript(string scriptText, TimeSpan timeout)
+    {
+        if (string.IsNullOrWhiteSpace(scriptText))
+            throw new ArgumentException("Script vazio.", nameof(scriptText));
+
+        var normalized = scriptText.Replace("\r\n", "\n").Replace('\r', '\n');
+        try
+        {
+            return ExecuteScript(normalized, timeout);
+        }
+        catch (Exception ex) when (IsSocketDrop(ex))
+        {
+            try
+            {
+                ConnectLocked();
+                return ExecuteScript(normalized, timeout);
+            }
+            catch (SshAuthenticationException)
+            {
+                AuthFailed?.Invoke(this, EventArgs.Empty);
+                throw;
+            }
+        }
+    }
+
     public void Dispose()
     {
         if (_disposed)
@@ -211,6 +239,34 @@ public sealed class SshSession : IDisposable
         {
             ExitCode = cmd.ExitStatus ?? 1,
             StdOut = stdout ?? "",
+            StdErr = cmd.Error ?? ""
+        };
+    }
+
+    private RemoteCommandResult ExecuteScript(string scriptText, TimeSpan timeout)
+    {
+        SshClient client;
+        lock (_gate)
+        {
+            if (_client is not { IsConnected: true })
+                ConnectLocked();
+            client = _client ?? throw new InvalidOperationException("Sem conexão SSH.");
+        }
+
+        using var cmd = client.CreateCommand("bash -s");
+        cmd.CommandTimeout = timeout;
+        var asyncResult = cmd.BeginExecute();
+        using (var writer = new StreamWriter(cmd.CreateInputStream(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)))
+        {
+            writer.Write(scriptText);
+            writer.Flush();
+        }
+
+        cmd.EndExecute(asyncResult);
+        return new RemoteCommandResult
+        {
+            ExitCode = cmd.ExitStatus ?? 1,
+            StdOut = cmd.Result ?? "",
             StdErr = cmd.Error ?? ""
         };
     }

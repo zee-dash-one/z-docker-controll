@@ -14,6 +14,7 @@ internal sealed class TrayApp : IDisposable
     private readonly SshSession _session;
     private readonly ServerMonitor _monitor;
     private readonly StatusWatcher _watcher;
+    private readonly StatsPoller _stats;
     private readonly NotifyIcon _notifyIcon;
     private readonly ContextMenuStrip _menu;
     private readonly Icon _icon;
@@ -22,11 +23,12 @@ internal sealed class TrayApp : IDisposable
     private bool _disposed;
     private bool _waking;
 
-    public TrayApp(SshSession session, ServerMonitor monitor, StatusWatcher watcher)
+    public TrayApp(SshSession session, ServerMonitor monitor, StatusWatcher watcher, StatsPoller stats)
     {
         _session = session;
         _monitor = monitor;
         _watcher = watcher;
+        _stats = stats;
         _session.AuthFailed += (_, _) =>
         {
             try
@@ -62,7 +64,7 @@ internal sealed class TrayApp : IDisposable
     {
         if (_mainForm is null || _mainForm.IsDisposed)
         {
-            _mainForm = new MainForm(_monitor, _watcher, WakeAsync, LoginAsync, EndSession, RequestExitAsync, _icon);
+            _mainForm = new MainForm(_monitor, _watcher, _stats, WakeAsync, LoginAsync, EndSession, RequestExitAsync, _icon);
             _mainForm.FormClosed += (_, _) => { _mainForm = null; };
         }
 
@@ -93,6 +95,7 @@ internal sealed class TrayApp : IDisposable
 
     private void ExitProcess()
     {
+        _stats.Stop();
         _watcher.Stop();
         _session.EndSession();
         _notifyIcon.Visible = false;
@@ -182,6 +185,7 @@ internal sealed class TrayApp : IDisposable
             await Task.Run(() => _session.Start(dialog.UserName, password, knownHosts)).ConfigureAwait(true);
             _mainForm?.Note("Sessão aberta em " + dialog.UserName + "@192.168.0.112.");
             _mainForm?.SetSessionState(SessionState.Connected);
+            _stats.Start();
             if (_watcher.LastStatuses.Count == 0)
                 _watcher.Start();
         }
@@ -214,6 +218,7 @@ internal sealed class TrayApp : IDisposable
 
     private void EndSession()
     {
+        _stats.Stop();
         _session.EndSession();
         _mainForm?.Note("Sessão encerrada. A senha foi zerada.");
         _mainForm?.SetSessionState(SessionState.Disconnected);
@@ -348,6 +353,7 @@ internal sealed class TrayApp : IDisposable
         _disposed = true;
         _watcher.TransitionDetected -= OnTransition;
         _watcher.SnapshotUpdated -= OnSnapshot;
+        _stats.Dispose();
         _watcher.Dispose();
         _session.Dispose();
         try

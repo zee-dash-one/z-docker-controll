@@ -1,3 +1,4 @@
+using ZLab.Models;
 using ZLab.Services;
 using ZLab.Ui;
 
@@ -39,12 +40,13 @@ internal static class Program
             return;
         }
 
-        ThemeManager.Apply(ThemeMode.System);
+        ThemeManager.Apply(settings.Current.Theme);
         var session = new SshSession();
         var monitor = new ServerMonitor(session, settings);
         var watcher = new StatusWatcher(monitor);
         var stats = new StatsPoller(session);
-        using var tray = new TrayApp(session, monitor, watcher, stats);
+        using var tray = new TrayApp(session, monitor, settings, watcher, stats);
+        tray.ShowPanel();
         tray.Run();
     }
 }

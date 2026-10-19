@@ -26,3 +26,6 @@ C:/GIT/ZAPFCOORP/router-ctrl/src/ZLab.Core/obj/Release/net8.0/ref/ZLab.Core.dll
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/.todo/_out/ZLab.Core.deps.json
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/.todo/_out/ZLab.Core.dll
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/.todo/_out/ZLab.Core.pdb
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/.tmp-build-core/ZLab.Core.deps.json
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/.tmp-build-core/ZLab.Core.dll
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/.tmp-build-core/ZLab.Core.pdb

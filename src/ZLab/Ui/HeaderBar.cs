@@ -36,6 +36,8 @@ public sealed class HeaderBar : Panel
         _chip.Controls.Add(_dot);
         _chip.Controls.Add(_chipText);
 
+        new ToolTip().SetToolTip(EnterButton, "Abrir sessão SSH");
+        new ToolTip().SetToolTip(EndSessionButton, "Encerrar a sessão e zerar a senha");
         new ToolTip().SetToolTip(ThemeButton, "Tema claro/escuro");
         new ToolTip().SetToolTip(CloseButton, "Fecha o app inteiro, inclusive o ícone da bandeja");
 

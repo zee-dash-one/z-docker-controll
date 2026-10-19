@@ -6,6 +6,9 @@ public sealed class AppSettings
     public int PollSeconds { get; set; } = 8;
     public int LogTailLines { get; set; } = 80;
 
+    /// <summary>Persisted UI theme. Default follows Windows.</summary>
+    public ThemeMode Theme { get; set; } = ThemeMode.System;
+
     /// <summary>When true, daily auto backup runs while the app is open.</summary>
     public bool BackupDailyEnabled { get; set; } = true;
 

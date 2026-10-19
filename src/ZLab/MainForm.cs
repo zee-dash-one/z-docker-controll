@@ -1,3 +1,4 @@
+using ZLab.Models;
 using ZLab.Services;
 using ZLab.Ui;
 
@@ -6,6 +7,7 @@ namespace ZLab;
 internal sealed class MainForm : Form
 {
     private readonly ServerMonitor _monitor;
+    private readonly MonitorSettingsStore _settings;
     private readonly StatusWatcher _watcher;
     private readonly StatsPoller _stats;
     private readonly MausBotAccessCode _accessCode;
@@ -17,21 +19,19 @@ internal sealed class MainForm : Form
     private readonly HeaderBar _header = new();
     private readonly EmptyStatePanel _empty = new();
     private readonly DashboardPanel _dashboard = new();
-    private readonly Panel _content = new();
-    private readonly Panel _output = new();
-    private readonly Label _outputTitle = new();
-    private readonly Label _outputLine = new();
+    private readonly CompositedPanel _content = new();
+    private readonly OutputPanel _output = new();
     private readonly System.Windows.Forms.Timer _probeTimer = new();
 
     private SessionState _sessionState = SessionState.Disconnected;
     private bool _busy;
     private bool _waking;
     private bool _serverResponds;
-    private string _lastOutput = "";
     private AccessCodePopover? _accessPopover;
 
     public MainForm(
         ServerMonitor monitor,
+        MonitorSettingsStore settings,
         StatusWatcher watcher,
         StatsPoller stats,
         Func<Task> wakeAsync,
@@ -41,6 +41,7 @@ internal sealed class MainForm : Form
         Icon icon)
     {
         _monitor = monitor;
+        _settings = settings;
         _watcher = watcher;
         _stats = stats;
         _accessCode = new MausBotAccessCode(monitor.Session);
@@ -52,10 +53,12 @@ internal sealed class MainForm : Form
         Text = "Z-Lab";
         Icon = icon;
         Font = Tokens.Body();
+        AutoScaleMode = AutoScaleMode.Dpi;
         ClientSize = new Size(1280, 800);
         MinimumSize = new Size(1024, 700);
         StartPosition = FormStartPosition.CenterScreen;
         DoubleBuffered = true;
+        KeyPreview = true;
 
         BuildChrome();
         WireEvents();
@@ -71,6 +74,7 @@ internal sealed class MainForm : Form
         _probeTimer.Tick += async (_, _) => await ProbeServerAsync();
         _probeTimer.Start();
 
+        // X hides to tray; only "Fechar Z-Lab" exits the process.
         FormClosing += (_, e) =>
         {
             if (e.CloseReason == CloseReason.UserClosing)
@@ -90,6 +94,8 @@ internal sealed class MainForm : Form
         ContainerStatusKind.Error => "Erro",
         _ => "Sem sessão"
     };
+
+    public SessionState SessionState => _sessionState;
 
     public void SetSessionState(SessionState state) => ApplySessionState(state);
 
@@ -111,8 +117,31 @@ internal sealed class MainForm : Form
             return;
         }
 
-        _lastOutput = DateTime.Now.ToString("HH:mm:ss") + "  " + text;
-        _outputLine.Text = _lastOutput;
+        _output.Append(text);
+    }
+
+    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+    {
+        if (keyData == (Keys.Control | Keys.L))
+        {
+            _output.Toggle();
+            return true;
+        }
+
+        if (keyData == Keys.F5 && _sessionState == SessionState.Connected)
+        {
+            _stats.RequestImmediate();
+            return true;
+        }
+
+        return base.ProcessCmdKey(ref msg, keyData);
+    }
+
+    protected override void OnDpiChanged(DpiChangedEventArgs e)
+    {
+        base.OnDpiChanged(e);
+        Font = Tokens.Body();
+        Invalidate(true);
     }
 
     protected override void Dispose(bool disposing)
@@ -136,38 +165,12 @@ internal sealed class MainForm : Form
     private void BuildChrome()
     {
         _header.Dock = DockStyle.Top;
-
         _output.Dock = DockStyle.Bottom;
-        _output.Height = LogicalToDeviceUnits(40);
-        _outputTitle.Text = "Saída";
-        _outputTitle.Font = Tokens.Caption();
-        _outputTitle.AutoSize = true;
-        _outputLine.Font = Tokens.Caption();
-        _outputLine.AutoSize = false;
-        _outputLine.AutoEllipsis = true;
-        _output.Controls.Add(_outputTitle);
-        _output.Controls.Add(_outputLine);
-        _output.Paint += (_, e) =>
-        {
-            var p = ThemeManager.Current;
-            using var brush = new SolidBrush(p.Surface);
-            e.Graphics.FillRectangle(brush, _output.ClientRectangle);
-            using var pen = new Pen(p.Stroke);
-            e.Graphics.DrawLine(pen, 0, 0, _output.Width, 0);
-        };
-        _output.Layout += (_, _) =>
-        {
-            var pad = LogicalToDeviceUnits(24);
-            _outputTitle.Location = new Point(pad, (_output.Height - _outputTitle.PreferredHeight) / 2);
-            var lineX = _outputTitle.Right + LogicalToDeviceUnits(16);
-            _outputLine.SetBounds(
-                lineX,
-                (_output.Height - _outputLine.PreferredHeight) / 2,
-                Math.Max(40, _output.Width - lineX - pad),
-                _outputLine.PreferredHeight);
-        };
 
         _content.Dock = DockStyle.Fill;
+        _content.AutoScroll = true;
+        _content.HorizontalScroll.Enabled = false;
+        _content.HorizontalScroll.Visible = false;
         _empty.Dock = DockStyle.Fill;
         _dashboard.Dock = DockStyle.Fill;
         _content.Controls.Add(_dashboard);
@@ -176,6 +179,11 @@ internal sealed class MainForm : Form
         Controls.Add(_content);
         Controls.Add(_output);
         Controls.Add(_header);
+
+        // Tab order: header → energy / refresh → cards → saída
+        _header.TabIndex = 0;
+        _dashboard.TabIndex = 1;
+        _output.TabIndex = 2;
     }
 
     private void WireEvents()
@@ -190,6 +198,8 @@ internal sealed class MainForm : Form
         {
             var next = ThemeManager.Current == Palette.Dark ? ThemeMode.Light : ThemeMode.Dark;
             ThemeManager.Apply(next);
+            _settings.Current.Theme = next;
+            _settings.Save();
         };
         _header.CloseButton.Click += async (_, _) => await _exitAsync();
 
@@ -288,6 +298,7 @@ internal sealed class MainForm : Form
             var result = await action().ConfigureAwait(true);
             Note(title + " — código " + result.ExitCode);
             Note(result.CombinedText());
+            _output.SetExpanded(true);
         }
         finally
         {
@@ -460,11 +471,8 @@ internal sealed class MainForm : Form
         var p = ThemeManager.Current;
         BackColor = p.Bg;
         _content.BackColor = p.Bg;
-        _output.BackColor = p.Surface;
-        _outputTitle.ForeColor = p.Text3;
-        _outputTitle.BackColor = p.Surface;
-        _outputLine.ForeColor = p.Text2;
-        _outputLine.BackColor = p.Surface;
+        if (IsHandleCreated)
+            Native.TrySetImmersiveDarkMode(Handle, p == Palette.Dark);
         Invalidate(true);
     }
 }

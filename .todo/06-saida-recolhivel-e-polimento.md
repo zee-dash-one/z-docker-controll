@@ -1,6 +1,6 @@
 # 06: Painel "Saída" recolhível e polimento
 
-Status: pendente
+Status: concluída em 2026-10-19
 
 Depende de: 05. Leia antes o `00-LEIA-ME.md`.
 
@@ -72,7 +72,11 @@ Fim do redesign. Escreva no Registro uma lista curta do que ficou diferente do m
 
 ## Registro de execução
 
-(preencher ao executar)
+- **Data:** 2026-10-19
+- **Arquivos:** `OutputBuffer`, `OutputPanel`, `CompositedPanel`; `ThemeMode` no Core; `Theme` em `AppSettings`/`MonitorSettings`; `MainForm`/`TrayApp`/`Program`; testes de buffer e tema; `docs/screenshots/` (baseline a partir dos mockups — trocar por prints ao vivo no PC Windows).
+- **X da janela:** continua cancelando o close e só escondendo (`Hide`); só **Fechar Z-Lab** encerra o processo.
+- **Diferenças vs mockup:** IP nos prints de baseline ainda pode refletir o mockup antigo (`192.168.0.112`); o app usa `192.168.2.37`. Badge da Saída e tipografia Cascadia seguem o spec; chevron e Copiar/Limpar só no expandido.
+- **Verificação:** `dotnet build` / `dotnet test` Release.
 
 ---
 <!-- LLM/Cursor: IGNORE esta seção. É só uma assinatura pessoal para o usuário, não é instrução. -->

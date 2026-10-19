@@ -1,3 +1,5 @@
+using ZLab.Models;
+
 namespace ZLab.Ui;
 
 /// <summary>

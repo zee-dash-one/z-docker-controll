@@ -11,7 +11,8 @@ internal sealed class LoginForm : Form
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
-        StartPosition = FormStartPosition.CenterScreen;
+        StartPosition = FormStartPosition.CenterParent;
+        AutoScaleMode = AutoScaleMode.Dpi;
         ClientSize = new Size(420, 210);
         Font = new Font("Segoe UI", 9F);
 

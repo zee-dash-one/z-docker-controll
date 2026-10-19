@@ -2,6 +2,13 @@
 
 ## 2026-10-19
 
+### todo 06: Saída recolhível e polimento
+
+- `OutputPanel` + `OutputBuffer` (máx. 1000 linhas, badge de não lidas, Copiar/Limpar, Ctrl+L).
+- Tema persistido em `%AppData%/ZLab/settings.json` (`Theme`); System segue o Windows.
+- Bandeja: Abrir / Entrar / Encerrar sessão / Fechar Z-Lab; tooltip de sessão; X só esconde.
+- DPI PerMonitorV2, `CompositedPanel`, F5, capturas em `docs/screenshots/`.
+
 ### todo 05: código de acesso MausBot
 
 - Botão "Código de acesso" só no card do MausBot; `AccessCodePopover` com Copiar (código só em memória).

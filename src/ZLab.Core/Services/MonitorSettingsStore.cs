@@ -1,9 +1,14 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using ZLab.Models;
+
 namespace ZLab.Services;
 
 public sealed class MonitorSettings
 {
     public int PollSeconds { get; set; } = 8;
     public int LogTailLines { get; set; } = 80;
+    public ThemeMode Theme { get; set; } = ThemeMode.System;
 }
 
 /// <summary>
@@ -11,6 +16,12 @@ public sealed class MonitorSettings
 /// </summary>
 public sealed class MonitorSettingsStore
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter() }
+    };
+
     private readonly string _path;
 
     public MonitorSettingsStore(string directory)
@@ -35,10 +46,10 @@ public sealed class MonitorSettingsStore
         try
         {
             var json = File.ReadAllText(_path);
-            var parsed = System.Text.Json.JsonSerializer.Deserialize<MonitorSettings>(json);
+            var parsed = JsonSerializer.Deserialize<MonitorSettings>(json, JsonOptions);
             Current = parsed ?? new MonitorSettings();
         }
-        catch (Exception ex) when (ex is System.Text.Json.JsonException or IOException)
+        catch (Exception ex) when (ex is JsonException or IOException)
         {
             Current = new MonitorSettings();
         }
@@ -51,10 +62,7 @@ public sealed class MonitorSettingsStore
 
     public void Save()
     {
-        var json = System.Text.Json.JsonSerializer.Serialize(Current, new System.Text.Json.JsonSerializerOptions
-        {
-            WriteIndented = true
-        });
+        var json = JsonSerializer.Serialize(Current, JsonOptions);
         File.WriteAllText(_path, json);
     }
 }

@@ -29,15 +29,19 @@ dotnet publish src/ZLab/ZLab.csproj -c Release -r win-x64 --self-contained false
 
 ## Interface
 
-Redesign em andamento (`.todo/`). Tokens e controles em `src/ZLab/Ui/`. Mockups: `docs/mockups/`.
+Tokens e controles em `src/ZLab/Ui/`. Mockups: `docs/mockups/`. Capturas: `docs/screenshots/`.
 
-Já feito: tema/componentes (01), casca (02), painel do servidor (03), cards de serviço (04) e código de acesso do MausBot (05). Polimento e Tailscale WSL: tarefas 06–07.
+Redesign (tarefas 01–06): tema, casca, métricas do servidor, cards, código MausBot, Saída recolhível e polimento. Pendente: Tailscale no WSL (07).
+
+![Sem sessão (escuro)](docs/screenshots/sem-sessao-escuro.png)
 
 Galeria dos componentes (tema claro/escuro):
 
 ```powershell
 dotnet run --project src/ZLab -- --galeria
 ```
+
+Atalhos: `Ctrl+L` mostra/esconde a Saída; `F5` atualiza as métricas (com sessão).
 
 ## Run (Windows)
 

@@ -1,10 +1,12 @@
 using Renci.SshNet.Common;
 using ZLab.Services;
+using ZLab.Ui;
 
 namespace ZLab;
 
 /// <summary>
 /// Tray shell. Exit does not stop containers on z-server-01.
+/// The window X hides to tray; only "Fechar Z-Lab" exits the process.
 /// </summary>
 internal sealed class TrayApp : IDisposable
 {
@@ -13,6 +15,7 @@ internal sealed class TrayApp : IDisposable
 
     private readonly SshSession _session;
     private readonly ServerMonitor _monitor;
+    private readonly MonitorSettingsStore _settings;
     private readonly StatusWatcher _watcher;
     private readonly StatsPoller _stats;
     private readonly NotifyIcon _notifyIcon;
@@ -23,10 +26,16 @@ internal sealed class TrayApp : IDisposable
     private bool _disposed;
     private bool _waking;
 
-    public TrayApp(SshSession session, ServerMonitor monitor, StatusWatcher watcher, StatsPoller stats)
+    public TrayApp(
+        SshSession session,
+        ServerMonitor monitor,
+        MonitorSettingsStore settings,
+        StatusWatcher watcher,
+        StatsPoller stats)
     {
         _session = session;
         _monitor = monitor;
+        _settings = settings;
         _watcher = watcher;
         _stats = stats;
         _session.AuthFailed += (_, _) =>
@@ -35,6 +44,7 @@ internal sealed class TrayApp : IDisposable
             {
                 _mainForm?.Note("A autenticação falhou. A sessão foi encerrada.");
                 _mainForm?.SetSessionState(SessionState.Disconnected);
+                UpdateTooltip();
             }
             catch
             {
@@ -43,11 +53,11 @@ internal sealed class TrayApp : IDisposable
         };
 
         _icon = LoadIcon();
-        _menu = new ContextMenuStrip();
+        _menu = ThemedContextMenu.Create();
         _notifyIcon = new NotifyIcon
         {
             Icon = _icon,
-            Text = "Z-Lab",
+            Text = "Z-Lab · Sem sessão",
             Visible = true,
             ContextMenuStrip = _menu
         };
@@ -55,7 +65,6 @@ internal sealed class TrayApp : IDisposable
         _menu.Opening += (_, _) => RebuildMenu();
         _watcher.TransitionDetected += OnTransition;
         _watcher.SnapshotUpdated += OnSnapshot;
-        // Statuses vêm do StatsPoller (uma SSH a cada 5 s). Sem loop próprio no watcher.
     }
 
     public void Run() => Application.Run();
@@ -64,7 +73,9 @@ internal sealed class TrayApp : IDisposable
     {
         if (_mainForm is null || _mainForm.IsDisposed)
         {
-            _mainForm = new MainForm(_monitor, _watcher, _stats, WakeAsync, LoginAsync, EndSession, RequestExitAsync, _icon);
+            _mainForm = new MainForm(
+                _monitor, _settings, _watcher, _stats,
+                WakeAsync, LoginAsync, EndSession, RequestExitAsync, _icon);
             _mainForm.FormClosed += (_, _) => { _mainForm = null; };
         }
 
@@ -72,6 +83,7 @@ internal sealed class TrayApp : IDisposable
         _mainForm.WindowState = FormWindowState.Normal;
         _mainForm.BringToFront();
         _mainForm.Activate();
+        UpdateTooltip();
     }
 
     public Task<bool> RequestExitAsync()
@@ -141,6 +153,7 @@ internal sealed class TrayApp : IDisposable
         {
             _waking = false;
             _mainForm?.SetWaking(false);
+            UpdateTooltip();
         }
     }
 
@@ -150,12 +163,14 @@ internal sealed class TrayApp : IDisposable
             return;
 
         _mainForm?.SetSessionState(SessionState.Connecting);
+        UpdateTooltip();
 
         var open = await PortProbe.IsOpenAsync(RemoteCommands.Host, RemoteCommands.Port, 3000, CancellationToken.None)
             .ConfigureAwait(true);
         if (!open)
         {
             _mainForm?.SetSessionState(SessionState.Disconnected);
+            UpdateTooltip();
             MessageBox.Show(
                 "A porta 22 não está aceitando conexão. Use Ligar servidor se a máquina estiver desligada.",
                 "Z-Lab",
@@ -168,6 +183,7 @@ internal sealed class TrayApp : IDisposable
         if (dialog.ShowDialog(_mainForm) != DialogResult.OK)
         {
             _mainForm?.SetSessionState(SessionState.Disconnected);
+            UpdateTooltip();
             return;
         }
 
@@ -177,6 +193,7 @@ internal sealed class TrayApp : IDisposable
             if (dialog.UserName.Length == 0 || password.Length == 0)
             {
                 _mainForm?.SetSessionState(SessionState.Disconnected);
+                UpdateTooltip();
                 MessageBox.Show("Informe usuário e senha.", "Z-Lab", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -186,11 +203,13 @@ internal sealed class TrayApp : IDisposable
             _mainForm?.Note("Sessão aberta em " + dialog.UserName + "@" + RemoteCommands.Host + ".");
             _mainForm?.SetSessionState(SessionState.Connected);
             _stats.Start();
+            UpdateTooltip();
         }
         catch (SshAuthenticationException)
         {
             _mainForm?.SetSessionState(SessionState.Disconnected);
             _mainForm?.Note("Falha na autenticação.");
+            UpdateTooltip();
             MessageBox.Show(
                 "Falha na autenticação. Confira usuário e senha. O sshd do z-server-01 precisa aceitar senha.",
                 "Z-Lab",
@@ -202,6 +221,7 @@ internal sealed class TrayApp : IDisposable
             _mainForm?.SetSessionState(SessionState.Disconnected);
             var reason = _session.LastReject;
             _mainForm?.Note(string.IsNullOrWhiteSpace(reason) ? ex.Message : reason);
+            UpdateTooltip();
             MessageBox.Show(
                 string.IsNullOrWhiteSpace(reason) ? ex.Message : reason,
                 "Z-Lab",
@@ -220,57 +240,43 @@ internal sealed class TrayApp : IDisposable
         _session.EndSession();
         _mainForm?.Note("Sessão encerrada. A senha foi zerada.");
         _mainForm?.SetSessionState(SessionState.Disconnected);
+        UpdateTooltip();
     }
 
     private void RebuildMenu()
     {
         _menu.Items.Clear();
-        _menu.Items.Add("Abrir painel", null, (_, _) => ShowPanel());
+        _menu.Items.Add("Abrir Z-Lab", null, (_, _) => ShowPanel());
         _menu.Items.Add(new ToolStripSeparator());
 
-        var statuses = _watcher.LastStatuses;
-        foreach (var service in RemoteCommands.Services)
+        var state = _mainForm?.SessionState
+            ?? (_session.IsConnected ? SessionState.Connected : SessionState.Disconnected);
+        var flags = SessionUiRules.For(state, serverResponds: true, busy: _waking);
+
+        var enter = new ToolStripMenuItem(flags.EnterText, null, async (_, _) =>
         {
-            var item = service;
-            var sub = new ToolStripMenuItem(item.DisplayName);
-            statuses.TryGetValue(item.Id, out var st);
-            sub.DropDownItems.Add(new ToolStripMenuItem("Status: " + MainForm.StatusText(st)) { Enabled = false });
-            sub.DropDownItems.Add("Subir", null, async (_, _) =>
-            {
-                await RunMenuAsync(() => _monitor.StartAsync(item.Id, CancellationToken.None));
-            });
-            sub.DropDownItems.Add("Parar", null, async (_, _) =>
-            {
-                await RunMenuAsync(() => _monitor.StopAsync(item.Id, CancellationToken.None));
-            });
-            _menu.Items.Add(sub);
-        }
-
+            ShowPanel();
+            await LoginAsync();
+        })
+        {
+            Enabled = flags.EnterEnabled
+        };
+        var end = new ToolStripMenuItem("Encerrar sessão", null, (_, _) => EndSession())
+        {
+            Enabled = flags.EndSessionEnabled
+        };
+        _menu.Items.Add(enter);
+        _menu.Items.Add(end);
         _menu.Items.Add(new ToolStripSeparator());
-        _menu.Items.Add("Ligar servidor", null, async (_, _) => await WakeAsync());
-        _menu.Items.Add("Encerrar sessão", null, (_, _) => EndSession());
         _menu.Items.Add("Fechar Z-Lab", null, async (_, _) => await RequestExitAsync());
-        UpdateTooltip(statuses);
-    }
 
-    private async Task RunMenuAsync(Func<Task<RemoteCommandResult>> action)
-    {
-        try
+        foreach (ToolStripItem item in _menu.Items)
         {
-            var result = await action().ConfigureAwait(true);
-            if (!result.Succeeded)
-            {
-                MessageBox.Show(
-                    result.CombinedText(),
-                    "Z-Lab",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
-            }
+            item.ForeColor = ThemeManager.Current.Text;
+            item.BackColor = ThemeManager.Current.Surface;
         }
-        catch (Exception ex)
-        {
-            MessageBox.Show(ex.Message, "Z-Lab", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
+
+        UpdateTooltip();
     }
 
     private void OnSnapshot(object? sender, StatusSnapshotEventArgs e)
@@ -278,7 +284,7 @@ internal sealed class TrayApp : IDisposable
         try
         {
             if (_notifyIcon.Visible)
-                UpdateTooltip(e.Statuses);
+                UpdateTooltip();
         }
         catch
         {
@@ -286,24 +292,11 @@ internal sealed class TrayApp : IDisposable
         }
     }
 
-    private void UpdateTooltip(IReadOnlyDictionary<string, ContainerStatusKind> statuses)
+    private void UpdateTooltip()
     {
-        var parts = new List<string>();
-        foreach (var service in RemoteCommands.Services)
-        {
-            var shortName = service.Id switch
-            {
-                "9router" => "9R",
-                "omniroute" => "Omni",
-                "mausbot" => "Maus",
-                _ => service.Id.Length <= 6 ? service.Id : service.Id[..6]
-            };
-            parts.Add(statuses.TryGetValue(service.Id, out var st)
-                ? shortName + ":" + MainForm.StatusText(st)
-                : shortName + ":…");
-        }
-
-        var tip = "Z-Lab — " + string.Join(" ", parts);
+        var open = _session.IsConnected
+            || (_mainForm is { SessionState: SessionState.Connected });
+        var tip = open ? "Z-Lab · Sessão aberta" : "Z-Lab · Sem sessão";
         if (tip.Length > 63)
             tip = tip[..60] + "…";
         _notifyIcon.Text = tip;

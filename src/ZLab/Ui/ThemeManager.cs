@@ -1,18 +1,13 @@
 using Microsoft.Win32;
+using ZLab.Models;
 
 namespace ZLab.Ui;
-
-public enum ThemeMode
-{
-    System,
-    Light,
-    Dark
-}
 
 public static class ThemeManager
 {
     private static ThemeMode _mode = ThemeMode.System;
     private static Palette _current = Resolve(ThemeMode.System);
+    private static bool _watchingSystem;
 
     public static Palette Current => _current;
 
@@ -24,6 +19,7 @@ public static class ThemeManager
     {
         _mode = mode;
         _current = Resolve(mode);
+        EnsureSystemWatch();
         ThemeChanged?.Invoke(null, EventArgs.Empty);
     }
 
@@ -38,6 +34,34 @@ public static class ThemeManager
         form.BackColor = Current.Bg;
         form.ForeColor = Current.Text;
         Native.TrySetImmersiveDarkMode(form.Handle, Current == Palette.Dark);
+    }
+
+    private static void EnsureSystemWatch()
+    {
+        if (_watchingSystem)
+            return;
+        _watchingSystem = true;
+        try
+        {
+            SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
+        }
+        catch
+        {
+            // non-interactive / service hosts
+        }
+    }
+
+    private static void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
+    {
+        if (_mode != ThemeMode.System)
+            return;
+        if (e.Category is not (UserPreferenceCategory.General or UserPreferenceCategory.Color))
+            return;
+        var next = Resolve(ThemeMode.System);
+        if (next == _current)
+            return;
+        _current = next;
+        ThemeChanged?.Invoke(null, EventArgs.Empty);
     }
 
     private static Palette Resolve(ThemeMode mode) => mode switch

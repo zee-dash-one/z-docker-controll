@@ -26,6 +26,7 @@ A suíte `dotnet test ZLab.sln -c Release` no SDK do WSL passou (109 testes), in
 10. **Cópia da senha dentro da SSH.NET** vive até o `Dispose` do cliente. O `char[]` do Z-Lab é zerado ao encerrar a sessão; a biblioteca guarda a cópia dela.
 11. **Health HTTP/TCP** continua fora, como na SPEC antiga (RF20).
 12. **IPv6 no pull.** O Atualizar roda `docker compose pull` no servidor. Se o daemon de lá preferir AAAA, o stderr volta no painel. O script `fix-wsl-docker-ipv4.sh` não entra mais nesse caminho.
+13. **Um Tailscale no WSL, depois da limpeza.** O Docker do WSL não fica vazio: o próximo projeto é um único container Tailscale, para o Windows usar a tailnet sem instalar o aplicativo (NetExtender em túnel dividido). 9Router, OmniRoute e MausBot não voltam para lá. Ainda não está fechado como o tráfego chega no Windows: proxy em localhost ou portproxy de portas escolhidas. Não pode instalar rota que tome o lugar do NetExtender. O userspace do Tailscale dentro do Docker não cria interface de tailnet no Windows.
 
 ## Cobertura
 

@@ -258,6 +258,8 @@ Estes serviços passam a ser operados só no z-server-01:
 
 Postgres, Redis e o resto do catálogo com `enabled: false` continuam desativados. Não entram nesta versão. O loop do operador no WSL (Iniciar / Parar / poll / portproxy / Tunnel do card) permanece o comportamento da V1 até alguém implementar este plano e, se o comportamento da V1 mudar, atualizar a SPEC junto.
 
+Depois da limpeza, o Docker do WSL fica com um único projeto, fora desta versão: um container Tailscale. O aplicativo Tailscale não entra no Windows, porque o NetExtender em túnel dividido conflita com ele. Esse container é o acesso da tailnet a partir do Windows. 9Router, OmniRoute e MausBot não voltam para o WSL. O jeito de entregar o tráfego no Windows (proxy em localhost ou portproxy de portas escolhidas, sem rota que tome o lugar do NetExtender) ainda não está fechado.
+
 ---
 
 ## 11. O que este plano não faz

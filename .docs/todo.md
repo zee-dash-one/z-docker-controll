@@ -18,6 +18,7 @@
 - [ ] `visudo` the file `z-server-01/zlab/sudoers-zlab-monitor`, then remove generic NOPASSWD and the `docker` group, with a key session still open
 - [ ] If `reboot` is a symlink to `systemctl`, edit that sudoers line first
 - [ ] After the monitor talks to the server, run `scripts/wipe-wsl-docker.ps1` and type `APAGAR`
+- [ ] After that wipe, one WSL Docker project only: Tailscale, so Windows can use the tailnet without the Tailscale app (NetExtender). 9Router, OmniRoute, and MausBot stay on z-server-01. How the traffic reaches Windows is still open.
 - [ ] BIOS task 08 still gates whether Liga actually powers the machine on
 
 ## Debt

@@ -1,9 +1,13 @@
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/publish/ZLab/ZLab.exe
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/publish/ZLab/Assets/z-lab.ico
-/mnt/c/GIT/ZAPFCOORP/router-ctrl/publish/ZLab/config/services.default.json
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/publish/ZLab/config/monitor.settings.json
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/publish/ZLab/ZLab.dll
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/publish/ZLab/ZLab.deps.json
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/publish/ZLab/ZLab.runtimeconfig.json
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/publish/ZLab/ZLab.pdb
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/publish/ZLab/BouncyCastle.Cryptography.dll
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/publish/ZLab/Microsoft.Extensions.DependencyInjection.Abstractions.dll
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/publish/ZLab/Microsoft.Extensions.Logging.Abstractions.dll
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/publish/ZLab/Renci.SshNet.dll
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/publish/ZLab/ZLab.Core.dll
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/publish/ZLab/ZLab.Core.pdb

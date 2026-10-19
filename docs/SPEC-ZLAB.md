@@ -34,7 +34,8 @@ Cada sessão pede usuário e senha. A senha fica na memória e é zerada ao ence
 - `docker compose down`, `rm`, `prune`, `exec`.
 - Aplicar o sudoers e apagar o Docker do WSL: procedimentos manuais, ainda não executados.
 - Health HTTP/TCP.
-- Instalar o app Tailscale no Windows.
+- Instalar o app Tailscale no Windows. O NetExtender em túnel dividido conflita com ele.
+- O Docker do WSL depois da limpeza. O plano seguinte é um único container Tailscale nesse Docker, para o Windows usar a tailnet. 9Router, OmniRoute e MausBot não voltam para o WSL. Isso não faz parte deste exe.
 
 ## 4. Aceite
 

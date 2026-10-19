@@ -2,6 +2,8 @@
 # Pede admin para o portproxy e para o arquivo hosts.
 # Nao remove imagens. Nao apaga C:\GIT\ZAPFCOORP\tailscale-9router.
 # Nao executa nada no z-server-01. PowerShell 5: sem &&.
+# Depois desta limpeza o plano e um unico container: Tailscale, para o Windows
+# usar a tailnet sem o app (NetExtender). Este script nao cria esse container.
 
 $ErrorActionPreference = "Stop"
 Write-Host "Isto apaga TODOS os containers e TODOS os volumes nomeados do Docker em Ubuntu-24.04."

@@ -72,6 +72,11 @@
           },
           "runtimeIdentifierGraphPath": "/home/hill/.dotnet/sdk/8.0.425/PortableRuntimeIdentifierGraph.json"
         }
+      },
+      "runtimes": {
+        "win-x64": {
+          "#import": []
+        }
       }
     },
     "/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab/ZLab.csproj": {
@@ -129,6 +134,10 @@
           "warn": true,
           "downloadDependencies": [
             {
+              "name": "Microsoft.NETCore.App.Host.win-x64",
+              "version": "[8.0.31, 8.0.31]"
+            },
+            {
               "name": "Microsoft.WindowsDesktop.App.Ref",
               "version": "[8.0.31, 8.0.31]"
             }
@@ -142,6 +151,11 @@
             }
           },
           "runtimeIdentifierGraphPath": "/home/hill/.dotnet/sdk/8.0.425/PortableRuntimeIdentifierGraph.json"
+        }
+      },
+      "runtimes": {
+        "win-x64": {
+          "#import": []
         }
       }
     }

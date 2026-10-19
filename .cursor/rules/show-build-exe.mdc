@@ -1,0 +1,30 @@
+---
+description: After a Z-Lab build or publish, tell the operator the exact file to run
+alwaysApply: true
+---
+
+# Show the runnable file after a build
+
+Whenever you run `dotnet build` or `dotnet publish` for Z-Lab, the final message must include the absolute path of the file the operator can start, and the command to start it. Do not end a build turn with only "build succeeded".
+
+## Paths
+
+| Command | File to report |
+|---------|----------------|
+| `dotnet build src/ZLab/ZLab.csproj -c Release` on Windows | `src\ZLab\bin\Release\net8.0-windows\ZLab.exe` |
+| same, `-c Debug` | `src\ZLab\bin\Debug\net8.0-windows\ZLab.exe` |
+| `dotnet publish ... -o <dir>` | `<dir>\ZLab.exe` |
+
+Use the absolute path, for example `C:\GIT\ZAPFCOORP\router-ctrl\src\ZLab\bin\Release\net8.0-windows\ZLab.exe`.
+
+## Build from WSL
+
+A build of `net8.0-windows` inside WSL writes `ZLab.dll` plus a Linux stub named `ZLab` (ELF). That stub is not the Windows program. Say so, and give:
+
+```powershell
+dotnet C:\GIT\ZAPFCOORP\router-ctrl\src\ZLab\bin\Release\net8.0-windows\ZLab.dll
+```
+
+That needs the .NET 8 Desktop Runtime. A double-click `.exe` exists only after publish with `-r win-x64`; then report that `ZLab.exe`.
+
+Do not point at an older `publish\ZLab\ZLab.exe` or `bin\...\win-x64\ZLab.exe` unless that file was produced by the build you just ran. Check the timestamp if more than one exe exists.

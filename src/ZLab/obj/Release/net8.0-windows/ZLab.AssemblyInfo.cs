@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ZLab")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9dae1c2e79eb040fa300a895063b2d4a6a4a0854")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b057f91debda76c1949e9c1b2b79f8f290c5fb2f")]
 [assembly: System.Reflection.AssemblyProductAttribute("ZLab")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ZLab")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

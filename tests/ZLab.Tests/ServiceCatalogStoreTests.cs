@@ -15,7 +15,7 @@ public sealed class ServiceCatalogStoreTests : IDisposable
         _runtimeDir = Path.Combine(_tempRoot, "AppData", "ZLab");
         Directory.CreateDirectory(_tempRoot);
 
-        var fixtureSeed = Path.Combine(AppContext.BaseDirectory, "Fixtures", "services.default.json");
+        var fixtureSeed = Path.Combine(AppContext.BaseDirectory, "Fixtures", "services.v1.json");
         if (!File.Exists(fixtureSeed))
         {
             // Fallback: repo-relative path when running under debugger without copy
@@ -44,13 +44,13 @@ public sealed class ServiceCatalogStoreTests : IDisposable
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null)
         {
-            var candidate = Path.Combine(dir.FullName, "config", "services.default.json");
+            var candidate = Path.Combine(dir.FullName, "tests", "ZLab.Tests", "Fixtures", "services.v1.json");
             if (File.Exists(candidate))
                 return candidate;
             dir = dir.Parent;
         }
 
-        throw new FileNotFoundException("Could not locate config/services.default.json");
+        throw new FileNotFoundException("Could not locate tests/ZLab.Tests/Fixtures/services.v1.json");
     }
 
     private ServiceCatalogStore CreateStore() => new(_runtimeDir, _seedPath);

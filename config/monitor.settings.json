@@ -1,0 +1,4 @@
+{
+  "pollSeconds": 8,
+  "logTailLines": 80
+}

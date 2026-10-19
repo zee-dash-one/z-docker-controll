@@ -2,7 +2,6 @@
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/tests/ZLab.Tests/bin/Release/net8.0/xunit.runner.visualstudio.testadapter.dll
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/tests/ZLab.Tests/bin/Release/net8.0/xunit.runner.reporters.netcoreapp10.dll
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/tests/ZLab.Tests/bin/Release/net8.0/xunit.runner.utility.netcoreapp10.dll
-/mnt/c/GIT/ZAPFCOORP/router-ctrl/tests/ZLab.Tests/bin/Release/net8.0/Fixtures/services.default.json
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/tests/ZLab.Tests/bin/Release/net8.0/ZLab.Tests.deps.json
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/tests/ZLab.Tests/bin/Release/net8.0/ZLab.Tests.runtimeconfig.json
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/tests/ZLab.Tests/bin/Release/net8.0/ZLab.Tests.dll
@@ -99,3 +98,9 @@
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/tests/ZLab.Tests/obj/Release/net8.0/ZLab.Tests.pdb
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/tests/ZLab.Tests/obj/Release/net8.0/ZLab.Tests.genruntimeconfig.cache
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/tests/ZLab.Tests/obj/Release/net8.0/ref/ZLab.Tests.dll
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/tests/ZLab.Tests/bin/Release/net8.0/Fixtures/services.v1.json
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/tests/ZLab.Tests/bin/Release/net8.0/BouncyCastle.Cryptography.dll
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/tests/ZLab.Tests/bin/Release/net8.0/Renci.SshNet.dll
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/tests/ZLab.Tests/obj/Release/net8.0/ZLab.Tests.sourcelink.json
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/tests/ZLab.Tests/bin/Release/net8.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/tests/ZLab.Tests/bin/Release/net8.0/Microsoft.Extensions.Logging.Abstractions.dll

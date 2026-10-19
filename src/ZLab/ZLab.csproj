@@ -20,7 +20,7 @@
     <Content Include="Assets\z-lab.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\..\config\services.default.json" Link="config\services.default.json">
+    <Content Include="..\..\config\monitor.settings.json" Link="config\monitor.settings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

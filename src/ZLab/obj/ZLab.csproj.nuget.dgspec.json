@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\GIT\\ZAPFCOORP\\router-ctrl\\src\\ZLab\\ZLab.csproj": {}
+    "/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab/ZLab.csproj": {}
   },
   "projects": {
-    "C:\\GIT\\ZAPFCOORP\\router-ctrl\\src\\ZLab.Core\\ZLab.Core.csproj": {
+    "/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab.Core/ZLab.Core.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\GIT\\ZAPFCOORP\\router-ctrl\\src\\ZLab.Core\\ZLab.Core.csproj",
+        "projectUniqueName": "/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab.Core/ZLab.Core.csproj",
         "projectName": "ZLab.Core",
-        "projectPath": "C:\\GIT\\ZAPFCOORP\\router-ctrl\\src\\ZLab.Core\\ZLab.Core.csproj",
-        "packagesPath": "C:\\Users\\htzc\\.nuget\\packages\\",
-        "outputPath": "C:\\GIT\\ZAPFCOORP\\router-ctrl\\src\\ZLab.Core\\obj\\",
+        "projectPath": "/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab.Core/ZLab.Core.csproj",
+        "packagesPath": "/home/hill/.nuget/packages/",
+        "outputPath": "/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab.Core/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\htzc\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "/home/hill/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -42,6 +42,12 @@
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
+          "dependencies": {
+            "SSH.NET": {
+              "target": "Package",
+              "version": "[2026.0.0, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",
@@ -53,31 +59,32 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Users\\htzc\\AppData\\Local\\dotnet-sdk\\sdk\\8.0.426/PortableRuntimeIdentifierGraph.json"
-        }
-      },
-      "runtimes": {
-        "win-x64": {
-          "#import": []
+          "runtimeIdentifierGraphPath": "/home/hill/.dotnet/sdk/8.0.425/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\GIT\\ZAPFCOORP\\router-ctrl\\src\\ZLab\\ZLab.csproj": {
+    "/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab/ZLab.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\GIT\\ZAPFCOORP\\router-ctrl\\src\\ZLab\\ZLab.csproj",
+        "projectUniqueName": "/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab/ZLab.csproj",
         "projectName": "ZLab",
-        "projectPath": "C:\\GIT\\ZAPFCOORP\\router-ctrl\\src\\ZLab\\ZLab.csproj",
-        "packagesPath": "C:\\Users\\htzc\\.nuget\\packages\\",
-        "outputPath": "C:\\GIT\\ZAPFCOORP\\router-ctrl\\src\\ZLab\\obj\\",
+        "projectPath": "/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab/ZLab.csproj",
+        "packagesPath": "/home/hill/.nuget/packages/",
+        "outputPath": "/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\htzc\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "/home/hill/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0-windows"
@@ -89,8 +96,8 @@
           "net8.0-windows7.0": {
             "targetAlias": "net8.0-windows",
             "projectReferences": {
-              "C:\\GIT\\ZAPFCOORP\\router-ctrl\\src\\ZLab.Core\\ZLab.Core.csproj": {
-                "projectPath": "C:\\GIT\\ZAPFCOORP\\router-ctrl\\src\\ZLab.Core\\ZLab.Core.csproj"
+              "/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab.Core/ZLab.Core.csproj": {
+                "projectPath": "/mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab.Core/ZLab.Core.csproj"
               }
             }
           }
@@ -120,6 +127,12 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
@@ -128,12 +141,7 @@
               "privateAssets": "none"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Users\\htzc\\AppData\\Local\\dotnet-sdk\\sdk\\8.0.426/PortableRuntimeIdentifierGraph.json"
-        }
-      },
-      "runtimes": {
-        "win-x64": {
-          "#import": []
+          "runtimeIdentifierGraphPath": "/home/hill/.dotnet/sdk/8.0.425/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

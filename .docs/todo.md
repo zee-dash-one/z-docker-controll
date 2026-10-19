@@ -1,45 +1,26 @@
-# Z-Lab V1 — Implementation Todo
+# Z-Lab 2.0 — Todo
 
-**Authority:** [`docs/SPEC-ZLAB.md`](../docs/SPEC-ZLAB.md) v0.5 · [`.docs/requirements.md`](requirements.md)  
-**Stack:** [`.docs/technologies.md`](technologies.md) · UX: [`.docs/ui-ux.md`](ui-ux.md)  
-**Specs:** [`.docs/specs/`](specs/)
+**Authority:** [`docs/SPEC-ZLAB.md`](../docs/SPEC-ZLAB.md)  
+**Debt and open questions:** [tech-debt.md](tech-debt.md)
 
-Dependency order top → bottom. Do not mark `[x]` until QA verify for that slug passes.
+## In the exe
 
-## Tasks
+- [x] Closed command catalog (`RemoteCommands`) and unit tests
+- [x] SSH.NET session, login dialog, `known_hosts` check, password cleared on session end
+- [x] Wake-on-LAN packet and TCP/22 wait
+- [x] Panel: host readings, six cards, LAN open, tailnet labels, power confirms
+- [x] Exit does not stop remote containers
+- [x] AppData settings for poll interval; service list is not JSON
 
-- [x] catalog-store: JSON catalog load/save AppData, seed default, enable/disable
-- [x] docker-ops: Start/stop/restart/logs/stats/update/open via Docker CLI or WSL
-- [x] tray-panel-ui: MainForm grid, catalog Desativado, PT-BR, Z-Lab icon
-- [x] status-notify: StatusWatcher poll + transition-only balloons
-- [x] backup-data: volumeCopy stamped folders + backup-all eligible
-- [x] lan-expose: exposeLan helper (portproxy + firewall, Admin)
-- [x] exit-shutdown: Sair confirms, stop managed+enabled, fail keeps app open
+## Operator, not run by the agent
 
-## Dependency notes
+- [ ] Confirm `sshd` accepts password for `melchior` (`zlab/aplicar-sudoers.sh` prints the check)
+- [ ] `visudo` the file `z-server-01/zlab/sudoers-zlab-monitor`, then remove generic NOPASSWD and the `docker` group, with a key session still open
+- [ ] If `reboot` is a symlink to `systemctl`, edit that sudoers line first
+- [ ] After the monitor talks to the server, run `scripts/wipe-wsl-docker.ps1` and type `APAGAR`
+- [ ] BIOS task 08 still gates whether Liga actually powers the machine on
 
-| Slug | Depends on | Why |
-|------|------------|-----|
-| catalog-store | — | Foundation: `ServicesDocument`, AppData path, Ativar/Desativar |
-| docker-ops | catalog-store (models) | Ops need `ServiceItem` fields; CLI is sole engine I/O |
-| tray-panel-ui | catalog-store, docker-ops | Panel binds store + ops; tray shell |
-| status-notify | catalog-store, docker-ops, tray-panel-ui | Poll uses store filters + Docker status + NotifyIcon |
-| backup-data | catalog-store, docker-ops, tray-panel-ui | Settings/folder UI + `docker cp` / volumes |
-| lan-expose | catalog-store, tray-panel-ui | `exposeLan` / `firewallRuleName`; Admin UX |
-| exit-shutdown | catalog-store, docker-ops, tray-panel-ui | Stop-all + confirm + process lifecycle |
+## Debt
 
-`lan-expose` and `backup-data` may proceed in parallel after `tray-panel-ui` if staffing allows; both must complete before V1 acceptance that lists them.
-
-## Definition of Done (per slug)
-
-1. Spec file exists at `.docs/specs/{slug}.spec.md` and matches this todo title.
-2. Implementation satisfies every **Acceptance** row in that spec (pass/fail).
-3. No contradiction with SPEC-ZLAB v0.5 or `.docs/requirements.md` (SPEC wins on conflict).
-4. Operator-facing strings for that slug’s surfaces are **PT-BR**.
-5. Unit/contract tests cover the slug’s testable core where engine I/O can be mocked (`DockerCli` boundary).
-6. No V1 out-of-scope features introduced (HTTP/TCP health, pgDump, visual env editor, OS autostart, compose orchestration, prune/delete volumes).
-7. QA verify for the slug is green before the checkbox is marked `[x]`.
-
-## Global V1 Done
-
-All seven slugs `[x]` **and** requirements AC-01–AC-15 plus AC-J01–AC-J06 and SPEC §9 criteria are satisfied on the operator environment (Windows UI + WSL2 Docker).
+- [ ] Backup of server volumes (click and daily) — not in this version
+- [ ] Delete unused V1 types from `ZLab.Core` after the WSL wipe

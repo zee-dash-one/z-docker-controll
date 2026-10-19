@@ -12,37 +12,29 @@ internal static class Program
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
 
-        var seedPath = Path.Combine(AppContext.BaseDirectory, "config", "services.default.json");
         var runtimeDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "ZLab");
 
-        var store = new ServiceCatalogStore(runtimeDir, seedPath);
+        var settings = new MonitorSettingsStore(runtimeDir);
         try
         {
-            store.EnsureSeeded();
-            store.Load();
+            settings.Load();
         }
         catch (Exception ex)
         {
             MessageBox.Show(
-                "Não foi possível carregar o catálogo de serviços.\n\n" + ex.Message,
+                "Não foi possível carregar as preferências.\n\n" + ex.Message,
                 "Z-Lab",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
             return;
         }
 
-        var docker = new DockerCli();
-        var containers = new ContainerService(docker);
-        var backups = new BackupService(docker, containers);
-        var lan = new LanExposeHelper();
-        var localHosts = new LocalHostsHelper();
-        var nineTunnel = new NineRouterTunnelHelper(docker);
-        var watcher = new StatusWatcher(store, containers);
-        var scheduledBackups = new ScheduledBackupService(store, backups);
-
-        using var tray = new TrayApp(store, containers, backups, lan, localHosts, nineTunnel, watcher, scheduledBackups);
+        var session = new SshSession();
+        var monitor = new ServerMonitor(session, settings);
+        var watcher = new StatusWatcher(monitor);
+        using var tray = new TrayApp(session, monitor, watcher);
         tray.Run();
     }
 }

@@ -1,48 +1,43 @@
+using Renci.SshNet.Common;
 using ZLab.Services;
 
 namespace ZLab;
 
 /// <summary>
-/// NotifyIcon lifecycle, tray menu, Exit stop-all flow.
+/// Tray shell. Exit does not stop containers on z-server-01.
 /// </summary>
 internal sealed class TrayApp : IDisposable
 {
     public const string ExitConfirmText =
-        "Parar os serviços gerenciados e sair do Z-Lab? Se algum não parar, o app não fecha.";
+        "Sair do Z-Lab? Os containers no z-server-01 continuam em execução.";
 
-    private readonly ServiceCatalogStore _store;
-    private readonly ContainerService _containers;
-    private readonly BackupService _backups;
-    private readonly LanExposeHelper _lan;
-    private readonly LocalHostsHelper _localHosts;
-    private readonly NineRouterTunnelHelper _nineTunnel;
+    private readonly SshSession _session;
+    private readonly ServerMonitor _monitor;
     private readonly StatusWatcher _watcher;
-    private readonly ScheduledBackupService _scheduledBackups;
     private readonly NotifyIcon _notifyIcon;
     private readonly ContextMenuStrip _menu;
     private readonly Icon _icon;
     private MainForm? _mainForm;
     private bool _exiting;
     private bool _disposed;
+    private bool _waking;
 
-    public TrayApp(
-        ServiceCatalogStore store,
-        ContainerService containers,
-        BackupService backups,
-        LanExposeHelper lan,
-        LocalHostsHelper localHosts,
-        NineRouterTunnelHelper nineTunnel,
-        StatusWatcher watcher,
-        ScheduledBackupService scheduledBackups)
+    public TrayApp(SshSession session, ServerMonitor monitor, StatusWatcher watcher)
     {
-        _store = store;
-        _containers = containers;
-        _backups = backups;
-        _lan = lan;
-        _localHosts = localHosts;
-        _nineTunnel = nineTunnel;
+        _session = session;
+        _monitor = monitor;
         _watcher = watcher;
-        _scheduledBackups = scheduledBackups;
+        _session.AuthFailed += (_, _) =>
+        {
+            try
+            {
+                _mainForm?.Note("A autenticação falhou. A sessão foi encerrada.");
+            }
+            catch
+            {
+                // tray can outlive the form
+            }
+        };
 
         _icon = LoadIcon();
         _menu = new ContextMenuStrip();
@@ -55,25 +50,18 @@ internal sealed class TrayApp : IDisposable
         };
         _notifyIcon.DoubleClick += (_, _) => ShowPanel();
         _menu.Opening += (_, _) => RebuildMenu();
-
         _watcher.TransitionDetected += OnTransition;
         _watcher.SnapshotUpdated += OnSnapshot;
-        _scheduledBackups.Completed += OnAutoBackupCompleted;
         _watcher.Start();
-        _scheduledBackups.Start();
-        _ = DiscoverDockerAsync();
     }
 
-    public void Run()
-    {
-        Application.Run();
-    }
+    public void Run() => Application.Run();
 
     public void ShowPanel()
     {
         if (_mainForm is null || _mainForm.IsDisposed)
         {
-            _mainForm = new MainForm(_store, _containers, _backups, _lan, _localHosts, _nineTunnel, _watcher, _icon, RequestExitAsync);
+            _mainForm = new MainForm(_monitor, _watcher, WakeAsync, LoginAsync, EndSession, RequestExitAsync, _icon);
             _mainForm.FormClosed += (_, _) => { _mainForm = null; };
         }
 
@@ -83,10 +71,10 @@ internal sealed class TrayApp : IDisposable
         _mainForm.Activate();
     }
 
-    public async Task<bool> RequestExitAsync()
+    public Task<bool> RequestExitAsync()
     {
         if (_exiting)
-            return false;
+            return Task.FromResult(false);
 
         var confirm = MessageBox.Show(
             ExitConfirmText,
@@ -94,58 +82,124 @@ internal sealed class TrayApp : IDisposable
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Question,
             MessageBoxDefaultButton.Button2);
-
         if (confirm != DialogResult.Yes)
-            return false;
+            return Task.FromResult(false);
 
         _exiting = true;
-        try
-        {
-            var doc = _store.Document;
-            if (doc is null)
-            {
-                ExitProcess();
-                return true;
-            }
-
-            var targets = doc.Services
-                .Where(s => s.Managed && s.Enabled)
-                .ToList();
-
-            var failures = new List<string>();
-            foreach (var item in targets)
-            {
-                var result = await _containers.StopAsync(item).ConfigureAwait(true);
-                if (!result.Ok)
-                    failures.Add($"{item.DisplayName}: {result.Message}");
-            }
-
-            if (failures.Count > 0)
-            {
-                MessageBox.Show(
-                    "Não foi possível parar todos os serviços. O Z-Lab permanece aberto.\n\n"
-                    + string.Join("\n", failures),
-                    "Z-Lab — Erro ao sair",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-                return false;
-            }
-
-            ExitProcess();
-            return true;
-        }
-        finally
-        {
-            _exiting = false;
-        }
+        ExitProcess();
+        return Task.FromResult(true);
     }
 
     private void ExitProcess()
     {
-        _scheduledBackups.Stop();
         _watcher.Stop();
+        _session.EndSession();
         _notifyIcon.Visible = false;
         Application.Exit();
+    }
+
+    private async Task WakeAsync()
+    {
+        if (_waking || _session.IsConnected)
+            return;
+        _waking = true;
+        _mainForm?.SetWaking(true);
+        try
+        {
+            var sent = await Task.Run(() => WakeOnLan.Send()).ConfigureAwait(true);
+            _mainForm?.Note("Magic packet enviado: " + sent + " bytes para 192.168.0.255:9.");
+            var up = await PortProbe.WaitUntilOpenAsync(
+                RemoteCommands.Host,
+                RemoteCommands.Port,
+                TimeSpan.FromMinutes(2),
+                TimeSpan.FromSeconds(5),
+                CancellationToken.None).ConfigureAwait(true);
+            if (!up)
+            {
+                _mainForm?.Note("A porta 22 não respondeu em 2 minutos. A tarefa 08 da BIOS (Wake-on-LAN) ainda está aberta.");
+                MessageBox.Show(
+                    "O pacote foi enviado, mas a porta 22 não respondeu em 2 minutos. A placa precisa estar armada (tarefa 08 da BIOS).",
+                    "Z-Lab — Liga",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+                return;
+            }
+
+            _mainForm?.Note("Porta 22 aceitando conexão.");
+            await LoginAsync().ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Z-Lab — Liga", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            _waking = false;
+            _mainForm?.SetWaking(false);
+        }
+    }
+
+    private async Task LoginAsync()
+    {
+        if (_session.IsConnected)
+            return;
+
+        var open = await PortProbe.IsOpenAsync(RemoteCommands.Host, RemoteCommands.Port, 3000, CancellationToken.None)
+            .ConfigureAwait(true);
+        if (!open)
+        {
+            MessageBox.Show(
+                "A porta 22 não está aceitando conexão. Use Liga se a máquina estiver desligada.",
+                "Z-Lab",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+            return;
+        }
+
+        using var dialog = new LoginForm();
+        if (dialog.ShowDialog(_mainForm) != DialogResult.OK)
+            return;
+
+        var password = dialog.CopyPassword();
+        try
+        {
+            if (dialog.UserName.Length == 0 || password.Length == 0)
+            {
+                MessageBox.Show("Informe usuário e senha.", "Z-Lab", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var knownHosts = ReadKnownHosts();
+            await Task.Run(() => _session.Start(dialog.UserName, password, knownHosts)).ConfigureAwait(true);
+            _mainForm?.Note("Sessão aberta em " + dialog.UserName + "@192.168.0.112.");
+        }
+        catch (SshAuthenticationException)
+        {
+            MessageBox.Show(
+                "Falha na autenticação. Confira usuário e senha. O sshd do z-server-01 precisa aceitar senha.",
+                "Z-Lab",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+        }
+        catch (Exception ex)
+        {
+            var reason = _session.LastReject;
+            MessageBox.Show(
+                string.IsNullOrWhiteSpace(reason) ? ex.Message : reason,
+                "Z-Lab",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+        }
+        finally
+        {
+            Array.Clear(password, 0, password.Length);
+        }
+    }
+
+    private void EndSession()
+    {
+        _session.EndSession();
+        _mainForm?.Note("Sessão encerrada. A senha foi zerada.");
     }
 
     private void RebuildMenu()
@@ -154,48 +208,49 @@ internal sealed class TrayApp : IDisposable
         _menu.Items.Add("Abrir painel", null, (_, _) => ShowPanel());
         _menu.Items.Add(new ToolStripSeparator());
 
-        var doc = _store.Document;
         var statuses = _watcher.LastStatuses;
-        if (doc is not null)
+        foreach (var service in RemoteCommands.Services)
         {
-            foreach (var item in doc.Services.Where(s => s.Enabled))
+            var item = service;
+            var sub = new ToolStripMenuItem(item.DisplayName);
+            statuses.TryGetValue(item.Id, out var st);
+            sub.DropDownItems.Add(new ToolStripMenuItem("Status: " + MainForm.StatusText(st)) { Enabled = false });
+            sub.DropDownItems.Add("Subir", null, async (_, _) =>
             {
-                var service = item;
-                var sub = new ToolStripMenuItem(service.DisplayName);
-
-                statuses.TryGetValue(service.Id, out var st);
-                var statusItem = new ToolStripMenuItem(
-                    "Status: " + (statuses.ContainsKey(service.Id)
-                        ? MainForm.StatusText(st)
-                        : "…"))
-                {
-                    Enabled = false
-                };
-                sub.DropDownItems.Add(statusItem);
-                sub.DropDownItems.Add(new ToolStripSeparator());
-
-                sub.DropDownItems.Add("Iniciar", null, async (_, _) =>
-                {
-                    await _containers.StartAsync(service).ConfigureAwait(true);
-                    _mainForm?.RequestRefresh();
-                });
-                sub.DropDownItems.Add("Parar", null, async (_, _) =>
-                {
-                    await _containers.StopAsync(service).ConfigureAwait(true);
-                    _mainForm?.RequestRefresh();
-                });
-                sub.DropDownItems.Add("Reiniciar", null, async (_, _) =>
-                {
-                    await _containers.RestartAsync(service).ConfigureAwait(true);
-                    _mainForm?.RequestRefresh();
-                });
-                _menu.Items.Add(sub);
-            }
+                await RunMenuAsync(() => _monitor.StartAsync(item.Id, CancellationToken.None));
+            });
+            sub.DropDownItems.Add("Parar", null, async (_, _) =>
+            {
+                await RunMenuAsync(() => _monitor.StopAsync(item.Id, CancellationToken.None));
+            });
+            _menu.Items.Add(sub);
         }
 
         _menu.Items.Add(new ToolStripSeparator());
+        _menu.Items.Add("Liga", null, async (_, _) => await WakeAsync());
+        _menu.Items.Add("Encerrar sessão", null, (_, _) => EndSession());
         _menu.Items.Add("Sair", null, async (_, _) => await RequestExitAsync());
-        UpdateTooltip();
+        UpdateTooltip(statuses);
+    }
+
+    private async Task RunMenuAsync(Func<Task<RemoteCommandResult>> action)
+    {
+        try
+        {
+            var result = await action().ConfigureAwait(true);
+            if (!result.Succeeded)
+            {
+                MessageBox.Show(
+                    result.CombinedText(),
+                    "Z-Lab",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Z-Lab", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 
     private void OnSnapshot(object? sender, StatusSnapshotEventArgs e)
@@ -207,102 +262,58 @@ internal sealed class TrayApp : IDisposable
         }
         catch
         {
-            // Ignore tooltip failures
+            // ignore tooltip failures
         }
     }
 
-    private void UpdateTooltip(IReadOnlyDictionary<string, ContainerStatusKind>? statuses = null)
+    private void UpdateTooltip(IReadOnlyDictionary<string, ContainerStatusKind> statuses)
     {
-        statuses ??= _watcher.LastStatuses;
-        var doc = _store.Document;
-        if (doc is null)
-        {
-            SetNotifyText("Z-Lab");
-            return;
-        }
-
         var parts = new List<string>();
-        foreach (var item in doc.Services.Where(s => s.Enabled))
+        foreach (var service in RemoteCommands.Services)
         {
-            var shortName = TooltipShortName(item.Id, item.DisplayName);
-            if (statuses.TryGetValue(item.Id, out var st))
-                parts.Add($"{shortName}: {MainForm.StatusText(st)}");
-            else
-                parts.Add($"{shortName}: …");
+            var shortName = service.Id switch
+            {
+                "9router" => "9R",
+                "omniroute" => "Omni",
+                "mausbot" => "Maus",
+                _ => service.Id.Length <= 6 ? service.Id : service.Id[..6]
+            };
+            parts.Add(statuses.TryGetValue(service.Id, out var st)
+                ? shortName + ":" + MainForm.StatusText(st)
+                : shortName + ":…");
         }
 
-        var tip = parts.Count == 0
-            ? "Z-Lab"
-            : "Z-Lab — " + string.Join(" | ", parts);
-        SetNotifyText(tip);
-    }
-
-    private void SetNotifyText(string text)
-    {
-        // NotifyIcon.Text max 63 chars
-        if (text.Length > 63)
-            text = text[..60] + "…";
-        _notifyIcon.Text = text;
-    }
-
-    private static string TooltipShortName(string id, string displayName) => id switch
-    {
-        "9router" => "9R",
-        "omniroute" => "Omni",
-        _ => displayName.Length <= 8 ? displayName : displayName[..8]
-    };
-
-    private void OnAutoBackupCompleted(object? sender, AutoBackupEventArgs e)
-    {
-        try
-        {
-            _notifyIcon.ShowBalloonTip(
-                5000,
-                "Z-Lab — Backup diário",
-                e.Message,
-                e.Ok ? ToolTipIcon.Info : ToolTipIcon.Warning);
-        }
-        catch
-        {
-            // Ignore balloon failures
-        }
-
-        _mainForm?.RefreshAutoBackupLabels();
+        var tip = "Z-Lab — " + string.Join(" ", parts);
+        if (tip.Length > 63)
+            tip = tip[..60] + "…";
+        _notifyIcon.Text = tip;
     }
 
     private void OnTransition(object? sender, StatusNotifyEventArgs e)
     {
-        var title = "Z-Lab";
         var text = e.Kind switch
         {
-            TransitionNotifyKind.Caiu => $"{e.DisplayName} caiu",
-            TransitionNotifyKind.Subiu => $"{e.DisplayName} subiu",
+            TransitionNotifyKind.Caiu => e.DisplayName + " caiu",
+            TransitionNotifyKind.Subiu => e.DisplayName + " subiu",
             _ => e.DisplayName
         };
-
         try
         {
-            _notifyIcon.ShowBalloonTip(4000, title, text, ToolTipIcon.Info);
+            _notifyIcon.ShowBalloonTip(4000, "Z-Lab", text, ToolTipIcon.Info);
         }
         catch
         {
-            // Ignore balloon failures on headless/unsupported hosts
+            // ignore
         }
-
-        _mainForm?.RequestRefresh();
     }
 
-    private async Task DiscoverDockerAsync()
+    private static string ReadKnownHosts()
     {
-        try
-        {
-            await _containers.EnsureDiscoveredAsync().ConfigureAwait(true);
-            _mainForm?.RequestRefresh();
-        }
-        catch
-        {
-            // Discovery errors surface when ops run
-        }
+        var path = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            ".ssh",
+            "known_hosts");
+        return File.Exists(path) ? File.ReadAllText(path) : "";
     }
 
     private static Icon LoadIcon()
@@ -320,9 +331,8 @@ internal sealed class TrayApp : IDisposable
         _disposed = true;
         _watcher.TransitionDetected -= OnTransition;
         _watcher.SnapshotUpdated -= OnSnapshot;
-        _scheduledBackups.Completed -= OnAutoBackupCompleted;
-        _scheduledBackups.Dispose();
         _watcher.Dispose();
+        _session.Dispose();
         _notifyIcon.Visible = false;
         _notifyIcon.Dispose();
         _menu.Dispose();

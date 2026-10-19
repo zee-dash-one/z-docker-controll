@@ -1,5 +1,3 @@
-using ZLab.Models;
-
 namespace ZLab.Services;
 
 public sealed class StatusNotifyEventArgs : EventArgs
@@ -13,15 +11,16 @@ public sealed class StatusNotifyEventArgs : EventArgs
 public sealed class StatusSnapshotEventArgs : EventArgs
 {
     public required IReadOnlyDictionary<string, ContainerStatusKind> Statuses { get; init; }
+    public HostReadings? Host { get; init; }
+    public bool Connected { get; init; }
 }
 
 /// <summary>
-/// Polls container status and raises transition-only notifications for managed+enabled items.
+/// Polls the six remote services and raises transition balloons.
 /// </summary>
 public sealed class StatusWatcher : IDisposable
 {
-    private readonly ServiceCatalogStore _store;
-    private readonly ContainerService _containers;
+    private readonly ServerMonitor _monitor;
     private readonly Dictionary<string, ContainerStatusKind?> _baseline = new(StringComparer.Ordinal);
     private readonly Dictionary<string, ContainerStatusKind> _lastStatuses = new(StringComparer.Ordinal);
     private readonly object _gate = new();
@@ -29,18 +28,14 @@ public sealed class StatusWatcher : IDisposable
     private Task? _loop;
     private int _pollSeconds = 8;
 
-    public StatusWatcher(ServiceCatalogStore store, ContainerService containers)
+    public StatusWatcher(ServerMonitor monitor)
     {
-        _store = store ?? throw new ArgumentNullException(nameof(store));
-        _containers = containers ?? throw new ArgumentNullException(nameof(containers));
+        _monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
     }
 
     public event EventHandler<StatusNotifyEventArgs>? TransitionDetected;
     public event EventHandler<StatusSnapshotEventArgs>? SnapshotUpdated;
 
-    /// <summary>
-    /// Last completed poll snapshot (empty until first poll finishes).
-    /// </summary>
     public IReadOnlyDictionary<string, ContainerStatusKind> LastStatuses
     {
         get
@@ -50,14 +45,14 @@ public sealed class StatusWatcher : IDisposable
         }
     }
 
-    public void Start(int? pollSeconds = null)
+    public void Start()
     {
         lock (_gate)
         {
             if (_loop is not null)
                 return;
 
-            _pollSeconds = ResolvePollSeconds(pollSeconds);
+            _pollSeconds = Math.Max(2, _monitor.PollSeconds);
             _cts = new CancellationTokenSource();
             _loop = Task.Run(() => RunLoopAsync(_cts.Token));
         }
@@ -96,14 +91,6 @@ public sealed class StatusWatcher : IDisposable
         cts?.Dispose();
     }
 
-    public void ResetBaselineFor(string serviceId)
-    {
-        lock (_gate)
-        {
-            _baseline[serviceId] = null;
-        }
-    }
-
     public void Dispose() => Stop();
 
     private async Task RunLoopAsync(CancellationToken cancellationToken)
@@ -120,99 +107,86 @@ public sealed class StatusWatcher : IDisposable
             }
             catch
             {
-                // keep polling; UI stays alive
+                // keep polling
             }
 
-            var delay = TimeSpan.FromSeconds(Math.Max(2, _pollSeconds));
             try
             {
-                await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+                await Task.Delay(TimeSpan.FromSeconds(Math.Max(2, _pollSeconds)), cancellationToken)
+                    .ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
                 break;
             }
 
-            // pick up pollSeconds changes after reload
-            _pollSeconds = ResolvePollSeconds(null);
+            _pollSeconds = Math.Max(2, _monitor.PollSeconds);
         }
     }
 
     public async Task PollOnceAsync(CancellationToken cancellationToken = default)
     {
-        var doc = _store.Document;
-        if (doc is null)
-            return;
+        ServerPoll poll;
+        try
+        {
+            poll = await _monitor.PollAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            poll = new ServerPoll
+            {
+                Connected = false,
+                Statuses = RemoteCommands.Services.ToDictionary(
+                    s => s.Id,
+                    _ => ContainerStatusKind.Error,
+                    StringComparer.Ordinal)
+            };
+        }
 
-        var snapshot = new Dictionary<string, ContainerStatusKind>(StringComparer.Ordinal);
-
-        foreach (var item in doc.Services)
+        foreach (var service in RemoteCommands.Services)
         {
             cancellationToken.ThrowIfCancellationRequested();
-
-            ContainerStatusKind next;
-            try
-            {
-                next = await _containers.GetStatusAsync(item, cancellationToken).ConfigureAwait(false);
-            }
-            catch
-            {
-                next = ContainerStatusKind.Error;
-            }
-
-            snapshot[item.Id] = next;
+            var next = poll.Statuses.TryGetValue(service.Id, out var st)
+                ? st
+                : ContainerStatusKind.Unknown;
 
             ContainerStatusKind? previous;
             lock (_gate)
-            {
-                _baseline.TryGetValue(item.Id, out previous);
-            }
+                _baseline.TryGetValue(service.Id, out previous);
 
-            var kind = StatusTransitionDetector.ShouldNotify(
-                previous,
-                next,
-                item.Managed,
-                item.Enabled);
+            var kind = StatusTransitionDetector.ShouldNotify(previous, next, managed: true, enabled: true);
 
             lock (_gate)
-            {
-                _baseline[item.Id] = next;
-            }
+                _baseline[service.Id] = next;
 
             if (kind != TransitionNotifyKind.None)
             {
                 TransitionDetected?.Invoke(this, new StatusNotifyEventArgs
                 {
-                    ServiceId = item.Id,
-                    DisplayName = item.DisplayName,
+                    ServiceId = service.Id,
+                    DisplayName = service.DisplayName,
                     Kind = kind,
                     Status = next
                 });
             }
         }
 
-        // Drop baselines for removed ids
-        lock (_gate)
-        {
-            foreach (var key in _baseline.Keys.Except(snapshot.Keys, StringComparer.Ordinal).ToList())
-                _baseline.Remove(key);
-        }
-
         lock (_gate)
         {
             _lastStatuses.Clear();
-            foreach (var kv in snapshot)
-                _lastStatuses[kv.Key] = kv.Value;
+            foreach (var service in RemoteCommands.Services)
+            {
+                _lastStatuses[service.Id] = poll.Statuses.TryGetValue(service.Id, out var st)
+                    ? st
+                    : ContainerStatusKind.Unknown;
+            }
         }
 
-        SnapshotUpdated?.Invoke(this, new StatusSnapshotEventArgs { Statuses = snapshot });
-    }
-
-    private int ResolvePollSeconds(int? overrideSeconds)
-    {
-        if (overrideSeconds is > 0)
-            return overrideSeconds.Value;
-        var fromSettings = _store.Document?.Settings.PollSeconds ?? 8;
-        return fromSettings > 0 ? fromSettings : 8;
+        SnapshotUpdated?.Invoke(this, new StatusSnapshotEventArgs
+        {
+            Statuses = LastStatuses,
+            Host = poll.Host,
+            Connected = poll.Connected
+        });
     }
 }

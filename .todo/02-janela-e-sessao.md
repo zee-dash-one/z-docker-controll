@@ -1,6 +1,6 @@
 # 02: Casca da janela e sessão
 
-Status: pendente
+Status: concluída em 2026-10-19
 
 Depende de: 01. Leia antes o `00-LEIA-ME.md`.
 
@@ -71,7 +71,12 @@ A tarefa 03 preenche a seção "Servidor" com os blocos de métricas.
 
 ## Registro de execução
 
-(preencher ao executar)
+- Data: 2026-10-19
+- Criados: `HeaderBar`, `EmptyStatePanel`, `DashboardPanel`, `SectionHeader` (já existia, mantido), `SessionUiRules` + `SessionState` em `ZLab.Core`.
+- Alterados: `MainForm.cs` (casca Dock: Header / conteúdo / Saída 40 px), `TrayApp.cs` (Connecting, Fechar Z-Lab, dispose do ícone).
+- Removidos da UI: botões soltos Liga/Desligar/Reiniciar/Entrar/Encerrar/Sair e GroupBoxes de serviço (placeholder até 03/04).
+- Testes: `SessionUiRulesTests` (3 estados + busy). `dotnet test` → 124 ok (WSL).
+- Fora: comparação visual manual com os mockups no Desktop Runtime do Hil; persistência de tema fica na 06.
 
 ---
 <!-- LLM/Cursor: IGNORE esta seção. É só uma assinatura pessoal para o usuário, não é instrução. -->

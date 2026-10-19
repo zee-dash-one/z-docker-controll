@@ -1,4 +1,5 @@
 using ZLab.Services;
+using ZLab.Ui;
 
 namespace ZLab;
 
@@ -10,23 +11,21 @@ internal sealed class MainForm : Form
     private readonly Func<Task> _loginAsync;
     private readonly Action _endSession;
     private readonly Func<Task> _exitAsync;
-    private readonly Dictionary<string, Card> _cards = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, ContainerStatusKind> _statuses = new(StringComparer.Ordinal);
-    private readonly TextBox _log = new();
-    private readonly Label _session = new();
-    private readonly TextBox _uptime = new();
-    private readonly TextBox _load = new();
-    private readonly TextBox _memory = new();
-    private readonly TextBox _diskRoot = new();
-    private readonly TextBox _diskDocker = new();
-    private readonly TextBox _diskData = new();
-    private readonly Button _liga = new();
-    private readonly Button _desligar = new();
-    private readonly Button _reiniciar = new();
-    private readonly Button _encerrar = new();
+
+    private readonly HeaderBar _header = new();
+    private readonly EmptyStatePanel _empty = new();
+    private readonly DashboardPanel _dashboard = new();
+    private readonly Panel _content = new();
+    private readonly Panel _output = new();
+    private readonly Label _outputTitle = new();
+    private readonly Label _outputLine = new();
+    private readonly System.Windows.Forms.Timer _probeTimer = new();
+
+    private SessionState _sessionState = SessionState.Disconnected;
     private bool _busy;
     private bool _waking;
-    private bool _connected;
+    private bool _serverResponds;
+    private string _lastOutput = "";
 
     public MainForm(
         ServerMonitor monitor,
@@ -46,42 +45,23 @@ internal sealed class MainForm : Form
 
         Text = "Z-Lab";
         Icon = icon;
-        Font = new Font("Segoe UI", 9F);
-        ClientSize = new Size(980, 740);
+        Font = Tokens.Body();
+        ClientSize = new Size(1280, 800);
+        MinimumSize = new Size(1024, 700);
         StartPosition = FormStartPosition.CenterScreen;
+        DoubleBuffered = true;
 
-        var top = BuildTop();
-        top.Dock = DockStyle.Top;
-        top.Height = 248;
+        BuildChrome();
+        WireEvents();
 
-        var flow = new FlowLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            AutoScroll = true,
-            Padding = new Padding(8),
-            WrapContents = true
-        };
-        foreach (var service in RemoteCommands.Services)
-        {
-            var card = BuildCard(service);
-            _cards[service.Id] = card;
-            _statuses[service.Id] = ContainerStatusKind.Unknown;
-            flow.Controls.Add(card.Group);
-        }
-
-        var logHost = new Panel { Dock = DockStyle.Bottom, Height = 160 };
-        var logLabel = new Label { Text = "Saída", Dock = DockStyle.Top, Height = 20 };
-        _log.Dock = DockStyle.Fill;
-        _log.Multiline = true;
-        _log.ReadOnly = true;
-        _log.ScrollBars = ScrollBars.Vertical;
-        _log.Font = new Font("Consolas", 9F);
-        logHost.Controls.Add(_log);
-        logHost.Controls.Add(logLabel);
-
-        Controls.Add(flow);
-        Controls.Add(logHost);
-        Controls.Add(top);
+        ThemeManager.ThemeChanged += OnTheme;
+        _watcher.SnapshotUpdated += OnSnapshot;
+        ApplyThemeColors();
+        ApplySessionState(SessionState.Disconnected);
+        _ = ProbeServerAsync();
+        _probeTimer.Interval = 10_000;
+        _probeTimer.Tick += async (_, _) => await ProbeServerAsync();
+        _probeTimer.Start();
 
         FormClosing += (_, e) =>
         {
@@ -91,9 +71,6 @@ internal sealed class MainForm : Form
                 Hide();
             }
         };
-
-        _watcher.SnapshotUpdated += OnSnapshot;
-        ApplyConnection(false);
     }
 
     public static string StatusText(ContainerStatusKind status) => status switch
@@ -106,12 +83,14 @@ internal sealed class MainForm : Form
         _ => "Sem sessão"
     };
 
+    public void SetSessionState(SessionState state) => ApplySessionState(state);
+
     public void SetWaking(bool waking)
     {
         _waking = waking;
-        ApplyConnection(_connected);
         if (waking)
-            _session.Text = "Pacote enviado. Aguardando a porta 22 (até 2 minutos)…";
+            Note("Pacote enviado. Aguardando a porta 22 (até 2 minutos)…");
+        ApplySessionState(_sessionState);
     }
 
     public void Note(string text)
@@ -124,138 +103,91 @@ internal sealed class MainForm : Form
             return;
         }
 
-        _log.AppendText(DateTime.Now.ToString("HH:mm:ss") + "  " + text + Environment.NewLine);
+        _lastOutput = DateTime.Now.ToString("HH:mm:ss") + "  " + text;
+        _outputLine.Text = _lastOutput;
     }
 
     protected override void Dispose(bool disposing)
     {
         if (disposing)
+        {
+            ThemeManager.ThemeChanged -= OnTheme;
             _watcher.SnapshotUpdated -= OnSnapshot;
+            _probeTimer.Stop();
+            _probeTimer.Dispose();
+        }
+
         base.Dispose(disposing);
     }
 
-    private Panel BuildTop()
+    private void BuildChrome()
     {
-        var panel = new Panel();
-        _session.Left = 12;
-        _session.Top = 8;
-        _session.Width = 640;
-        _session.Text = "Sem sessão";
+        _header.Dock = DockStyle.Top;
 
-        _liga.Text = "Liga";
-        _liga.SetBounds(12, 32, 90, 28);
-        _liga.Click += async (_, _) => await _wakeAsync();
-
-        _desligar.Text = "Desligar";
-        _desligar.SetBounds(108, 32, 90, 28);
-        _desligar.Click += async (_, _) => await PowerAsync(shutdown: true);
-
-        _reiniciar.Text = "Reiniciar";
-        _reiniciar.SetBounds(204, 32, 90, 28);
-        _reiniciar.Click += async (_, _) => await PowerAsync(shutdown: false);
-
-        var entrar = new Button { Text = "Entrar", Bounds = new Rectangle(300, 32, 90, 28) };
-        entrar.Click += async (_, _) => await _loginAsync();
-
-        _encerrar.Text = "Encerrar sessão";
-        _encerrar.SetBounds(396, 32, 130, 28);
-        _encerrar.Click += (_, _) => _endSession();
-
-        var sair = new Button { Text = "Sair", Bounds = new Rectangle(532, 32, 80, 28) };
-        sair.Click += async (_, _) => await _exitAsync();
-
-        AddReading(panel, "Tempo no ar", _uptime, 0);
-        AddReading(panel, "Carga", _load, 1);
-        AddReading(panel, "Memória", _memory, 2);
-        AddReading(panel, "Disco /", _diskRoot, 3);
-        AddReading(panel, "Disco Docker", _diskDocker, 4);
-        AddReading(panel, "Disco /data", _diskData, 5);
-
-        panel.Controls.AddRange(new Control[] { _session, _liga, _desligar, _reiniciar, entrar, _encerrar, sair });
-        return panel;
-    }
-
-    private static void AddReading(Control parent, string caption, TextBox box, int row)
-    {
-        var top = 68 + (row * 28);
-        parent.Controls.Add(new Label { Text = caption, Left = 12, Top = top + 4, Width = 90 });
-        box.Left = 104;
-        box.Top = top;
-        box.Width = 840;
-        box.Height = 24;
-        box.ReadOnly = true;
-        parent.Controls.Add(box);
-    }
-
-    private Card BuildCard(RemoteService service)
-    {
-        var group = new GroupBox
+        _output.Dock = DockStyle.Bottom;
+        _output.Height = LogicalToDeviceUnits(40);
+        _outputTitle.Text = "Saída";
+        _outputTitle.Font = Tokens.Caption();
+        _outputTitle.AutoSize = true;
+        _outputLine.Font = Tokens.Caption();
+        _outputLine.AutoSize = false;
+        _outputLine.AutoEllipsis = true;
+        _output.Controls.Add(_outputTitle);
+        _output.Controls.Add(_outputLine);
+        _output.Paint += (_, e) =>
         {
-            Text = service.DisplayName,
-            Width = 340,
-            Height = 200,
-            Margin = new Padding(8)
+            var p = ThemeManager.Current;
+            using var brush = new SolidBrush(p.Surface);
+            e.Graphics.FillRectangle(brush, _output.ClientRectangle);
+            using var pen = new Pen(p.Stroke);
+            e.Graphics.DrawLine(pen, 0, 0, _output.Width, 0);
         };
-        var status = new Label { Left = 12, Top = 24, Width = 270, Text = "Sem sessão" };
-        var meta = new Label
+        _output.Layout += (_, _) =>
         {
-            Left = 12,
-            Top = 46,
-            Width = 270,
-            Height = 32,
-            Text = service.LanUrl ?? service.HttpsLabel ?? ""
+            var pad = LogicalToDeviceUnits(24);
+            _outputTitle.Location = new Point(pad, (_output.Height - _outputTitle.PreferredHeight) / 2);
+            var lineX = _outputTitle.Right + LogicalToDeviceUnits(16);
+            _outputLine.SetBounds(
+                lineX,
+                (_output.Height - _outputLine.PreferredHeight) / 2,
+                Math.Max(40, _output.Width - lineX - pad),
+                _outputLine.PreferredHeight);
         };
 
-        var subir = Make("Subir", 12, 88, async () => await MutateAsync(service, "Subir", () => _monitor.StartAsync(service.Id, CancellationToken.None)));
-        var parar = Make("Parar", 96, 88, async () => await MutateAsync(service, "Parar", () => _monitor.StopAsync(service.Id, CancellationToken.None)));
-        var criar = Make("Criar", 180, 88, async () => await MutateAsync(service, "Criar", () => _monitor.CreateAsync(service.Id, CancellationToken.None)));
-        var atualizar = Make("Atualizar", 12, 124, async () => await UpdateAsync(service));
-        var logs = Make("Logs", 96, 124, async () => await ShowOutputAsync(service.DisplayName + " logs", () => _monitor.LogsAsync(service.Id, CancellationToken.None)));
-        var uso = Make("Uso", 180, 124, async () => await ShowOutputAsync(service.DisplayName + " uso", () => _monitor.StatsAsync(service.Id, CancellationToken.None)));
-        Button? abrir = null;
-        if (service.LanUrl is not null)
-        {
-            var url = service.LanUrl;
-            abrir = Make("Abrir", 264, 124, () =>
-            {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
-                return Task.CompletedTask;
-            });
-            group.Controls.Add(abrir);
-        }
+        _content.Dock = DockStyle.Fill;
+        _empty.Dock = DockStyle.Fill;
+        _dashboard.Dock = DockStyle.Fill;
+        _content.Controls.Add(_dashboard);
+        _content.Controls.Add(_empty);
 
-        group.Controls.AddRange(new Control[] { status, meta, subir, parar, criar, atualizar, logs, uso });
-        return new Card(service, group, status, subir, parar, criar, atualizar, logs, uso, abrir);
+        Controls.Add(_content);
+        Controls.Add(_output);
+        Controls.Add(_header);
     }
 
-    private static Button Make(string text, int x, int y, Func<Task> click)
+    private void WireEvents()
     {
-        var button = new Button { Text = text, Left = x, Top = y, Width = 80, Height = 28 };
-        button.Click += async (_, _) =>
+        _header.EnterButton.Click += async (_, _) =>
         {
-            try
-            {
-                await click();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Z-Lab", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            try { await _loginAsync(); }
+            catch (Exception ex) { Note(ex.Message); }
         };
-        return button;
-    }
+        _header.EndSessionButton.Click += (_, _) => _endSession();
+        _header.ThemeButton.Click += (_, _) =>
+        {
+            var next = ThemeManager.Current == Palette.Dark ? ThemeMode.Light : ThemeMode.Dark;
+            ThemeManager.Apply(next);
+        };
+        _header.CloseButton.Click += async (_, _) => await _exitAsync();
 
-    private async Task UpdateAsync(RemoteService service)
-    {
-        var confirm = MessageBox.Show(
-            RemoteCommands.UpdateConfirm,
-            "Z-Lab — Atualizar",
-            MessageBoxButtons.YesNo,
-            MessageBoxIcon.Question,
-            MessageBoxDefaultButton.Button2);
-        if (confirm != DialogResult.Yes)
-            return;
-        await MutateAsync(service, "Atualizar", () => _monitor.UpdateAsync(service.Id, CancellationToken.None));
+        _empty.WakeButton.Click += async (_, _) => await _wakeAsync();
+        _dashboard.WakeButton.Click += async (_, _) => await _wakeAsync();
+        _dashboard.RebootButton.Click += async (_, _) => await PowerAsync(shutdown: false);
+        _dashboard.ShutdownButton.Click += async (_, _) => await PowerAsync(shutdown: true);
+
+        var gap = new Padding(0, 0, LogicalToDeviceUnits(8), 0);
+        _dashboard.WakeButton.Margin = gap;
+        _dashboard.RebootButton.Margin = gap;
     }
 
     private async Task PowerAsync(bool shutdown)
@@ -269,20 +201,23 @@ internal sealed class MainForm : Form
         if (confirm != DialogResult.Yes)
             return;
 
-        await MutateAsync(null, shutdown ? "Desligar" : "Reiniciar", () =>
-            shutdown ? _monitor.ShutdownAsync(CancellationToken.None) : _monitor.RebootAsync(CancellationToken.None));
+        await MutateAsync(shutdown ? "Desligar" : "Reiniciar", () =>
+            shutdown
+                ? _monitor.ShutdownAsync(CancellationToken.None)
+                : _monitor.RebootAsync(CancellationToken.None));
+        _endSession();
     }
 
-    private async Task MutateAsync(RemoteService? service, string verb, Func<Task<RemoteCommandResult>> action)
+    private async Task MutateAsync(string verb, Func<Task<RemoteCommandResult>> action)
     {
         if (_busy)
             return;
         _busy = true;
-        ApplyButtons();
+        ApplySessionState(_sessionState);
         try
         {
             var result = await action().ConfigureAwait(true);
-            Note(verb + (service is null ? "" : " " + service.DisplayName) + " — código " + result.ExitCode);
+            Note(verb + " — código " + result.ExitCode);
             var text = result.CombinedText();
             if (text.Length > 0)
                 Note(text);
@@ -298,26 +233,7 @@ internal sealed class MainForm : Form
         finally
         {
             _busy = false;
-            ApplyButtons();
-        }
-    }
-
-    private async Task ShowOutputAsync(string title, Func<Task<RemoteCommandResult>> action)
-    {
-        if (_busy)
-            return;
-        _busy = true;
-        ApplyButtons();
-        try
-        {
-            var result = await action().ConfigureAwait(true);
-            Note(title + " — código " + result.ExitCode);
-            Note(result.CombinedText());
-        }
-        finally
-        {
-            _busy = false;
-            ApplyButtons();
+            ApplySessionState(_sessionState);
         }
     }
 
@@ -327,105 +243,88 @@ internal sealed class MainForm : Form
             return;
         BeginInvoke(() =>
         {
-            _connected = e.Connected;
-            foreach (var kv in e.Statuses)
-                _statuses[kv.Key] = kv.Value;
-            if (e.Host is not null)
-            {
-                _uptime.Text = e.Host.Uptime;
-                _load.Text = e.Host.Load;
-                _memory.Text = e.Host.Memory;
-                _diskRoot.Text = e.Host.DiskRoot;
-                _diskDocker.Text = e.Host.DiskDocker;
-                _diskData.Text = e.Host.DiskData;
-            }
-            else if (!e.Connected)
-            {
-                _uptime.Clear();
-                _load.Clear();
-                _memory.Clear();
-                _diskRoot.Clear();
-                _diskDocker.Clear();
-                _diskData.Clear();
-            }
+            if (_sessionState == SessionState.Connecting)
+                return;
 
-            ApplyConnection(e.Connected);
+            if (e.Connected)
+            {
+                _serverResponds = true;
+                ApplySessionState(SessionState.Connected);
+            }
+            else if (_sessionState == SessionState.Connected)
+            {
+                ApplySessionState(SessionState.Disconnected);
+            }
         });
     }
 
-    private void ApplyConnection(bool connected)
+    private void ApplySessionState(SessionState state)
     {
-        _connected = connected;
-        if (!_waking)
-        {
-            _session.Text = connected
-                ? "Sessão em " + (_monitor.Session.UserName ?? "") + "@192.168.0.112"
-                : "Sem sessão. Com a máquina desligada, só Liga responde.";
-        }
+        _sessionState = state;
+        var responds = state == SessionState.Connected || _serverResponds;
+        var flags = SessionUiRules.For(state, responds, _busy || _waking);
 
-        ApplyButtons();
+        _header.EnterButton.Enabled = flags.EnterEnabled;
+        _header.EnterButton.Text = flags.EnterText;
+        _header.EnterButton.Variant = flags.EnterPrimary ? ZButtonVariant.Primary : ZButtonVariant.Secondary;
+        _header.EndSessionButton.Enabled = flags.EndSessionEnabled;
+
+        var userHost = (_monitor.Session.UserName ?? "") + "@" + RemoteCommands.Host;
+        _header.SetSession(state == SessionState.Connected, userHost);
+
+        _empty.Visible = flags.ShowEmpty;
+        _dashboard.Visible = flags.ShowDashboard;
+        _dashboard.SetEnergyVisible(flags.EnergyVisible);
+        _dashboard.WakeButton.Enabled = flags.WakeEnabled;
+        _dashboard.RebootButton.Enabled = flags.RebootEnabled;
+        _dashboard.ShutdownButton.Enabled = flags.ShutdownEnabled;
+
+        _empty.SetServerResponds(_serverResponds);
+        _empty.WakeButton.Enabled = !_busy && !_waking && !_serverResponds;
     }
 
-    private void ApplyButtons()
+    private async Task ProbeServerAsync()
     {
-        var session = _connected && !_busy && !_waking;
-        _liga.Enabled = !_connected && !_waking && !_busy;
-        _desligar.Enabled = session;
-        _reiniciar.Enabled = session;
-        _encerrar.Enabled = _connected && !_busy;
-        foreach (var card in _cards.Values)
+        if (_sessionState == SessionState.Connected)
+            return;
+        try
         {
-            _statuses.TryGetValue(card.Service.Id, out var status);
-            card.Status.Text = StatusText(status);
-            var up = status == ContainerStatusKind.Up;
-            var down = status == ContainerStatusKind.Down;
-            var absent = status == ContainerStatusKind.Absent;
-            card.Subir.Enabled = session && down;
-            card.Parar.Enabled = session && up;
-            card.Criar.Enabled = session && absent;
-            card.Atualizar.Enabled = session && (up || down || absent);
-            card.Logs.Enabled = session && (up || down);
-            card.Uso.Enabled = session && up;
-            if (card.Abrir is not null)
-                card.Abrir.Enabled = session && up;
+            var open = await PortProbe.IsOpenAsync(
+                RemoteCommands.Host, RemoteCommands.Port, 1500, CancellationToken.None).ConfigureAwait(true);
+            if (IsDisposed)
+                return;
+            if (InvokeRequired)
+            {
+                BeginInvoke(() =>
+                {
+                    _serverResponds = open;
+                    ApplySessionState(_sessionState);
+                });
+            }
+            else
+            {
+                _serverResponds = open;
+                ApplySessionState(_sessionState);
+            }
+        }
+        catch
+        {
+            // probe failures count as offline
         }
     }
 
-    private sealed class Card
-    {
-        public Card(
-            RemoteService service,
-            GroupBox group,
-            Label status,
-            Button subir,
-            Button parar,
-            Button criar,
-            Button atualizar,
-            Button logs,
-            Button uso,
-            Button? abrir)
-        {
-            Service = service;
-            Group = group;
-            Status = status;
-            Subir = subir;
-            Parar = parar;
-            Criar = criar;
-            Atualizar = atualizar;
-            Logs = logs;
-            Uso = uso;
-            Abrir = abrir;
-        }
+    private void OnTheme(object? sender, EventArgs e) => ApplyThemeColors();
 
-        public RemoteService Service { get; }
-        public GroupBox Group { get; }
-        public Label Status { get; }
-        public Button Subir { get; }
-        public Button Parar { get; }
-        public Button Criar { get; }
-        public Button Atualizar { get; }
-        public Button Logs { get; }
-        public Button Uso { get; }
-        public Button? Abrir { get; }
+    private void ApplyThemeColors()
+    {
+        var p = ThemeManager.Current;
+        BackColor = p.Bg;
+        _content.BackColor = p.Bg;
+        _output.BackColor = p.Surface;
+        _outputTitle.ForeColor = p.Text3;
+        _outputTitle.BackColor = p.Surface;
+        _outputLine.ForeColor = p.Text2;
+        _outputLine.BackColor = p.Surface;
+        Invalidate(true);
     }
 }

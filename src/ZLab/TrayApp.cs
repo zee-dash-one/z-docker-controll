@@ -32,6 +32,7 @@ internal sealed class TrayApp : IDisposable
             try
             {
                 _mainForm?.Note("A autenticação falhou. A sessão foi encerrada.");
+                _mainForm?.SetSessionState(SessionState.Disconnected);
             }
             catch
             {
@@ -78,7 +79,7 @@ internal sealed class TrayApp : IDisposable
 
         var confirm = MessageBox.Show(
             ExitConfirmText,
-            "Z-Lab — Sair",
+            "Z-Lab — Fechar",
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Question,
             MessageBoxDefaultButton.Button2);
@@ -95,6 +96,7 @@ internal sealed class TrayApp : IDisposable
         _watcher.Stop();
         _session.EndSession();
         _notifyIcon.Visible = false;
+        _notifyIcon.Dispose();
         Application.Exit();
     }
 
@@ -119,7 +121,7 @@ internal sealed class TrayApp : IDisposable
                 _mainForm?.Note("A porta 22 não respondeu em 2 minutos. A tarefa 08 da BIOS (Wake-on-LAN) ainda está aberta.");
                 MessageBox.Show(
                     "O pacote foi enviado, mas a porta 22 não respondeu em 2 minutos. A placa precisa estar armada (tarefa 08 da BIOS).",
-                    "Z-Lab — Liga",
+                    "Z-Lab — Ligar",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
                 return;
@@ -130,7 +132,7 @@ internal sealed class TrayApp : IDisposable
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "Z-Lab — Liga", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(ex.Message, "Z-Lab — Ligar", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally
         {
@@ -144,12 +146,15 @@ internal sealed class TrayApp : IDisposable
         if (_session.IsConnected)
             return;
 
+        _mainForm?.SetSessionState(SessionState.Connecting);
+
         var open = await PortProbe.IsOpenAsync(RemoteCommands.Host, RemoteCommands.Port, 3000, CancellationToken.None)
             .ConfigureAwait(true);
         if (!open)
         {
+            _mainForm?.SetSessionState(SessionState.Disconnected);
             MessageBox.Show(
-                "A porta 22 não está aceitando conexão. Use Liga se a máquina estiver desligada.",
+                "A porta 22 não está aceitando conexão. Use Ligar servidor se a máquina estiver desligada.",
                 "Z-Lab",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
@@ -158,13 +163,17 @@ internal sealed class TrayApp : IDisposable
 
         using var dialog = new LoginForm();
         if (dialog.ShowDialog(_mainForm) != DialogResult.OK)
+        {
+            _mainForm?.SetSessionState(SessionState.Disconnected);
             return;
+        }
 
         var password = dialog.CopyPassword();
         try
         {
             if (dialog.UserName.Length == 0 || password.Length == 0)
             {
+                _mainForm?.SetSessionState(SessionState.Disconnected);
                 MessageBox.Show("Informe usuário e senha.", "Z-Lab", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -172,9 +181,14 @@ internal sealed class TrayApp : IDisposable
             var knownHosts = ReadKnownHosts();
             await Task.Run(() => _session.Start(dialog.UserName, password, knownHosts)).ConfigureAwait(true);
             _mainForm?.Note("Sessão aberta em " + dialog.UserName + "@192.168.0.112.");
+            _mainForm?.SetSessionState(SessionState.Connected);
+            if (_watcher.LastStatuses.Count == 0)
+                _watcher.Start();
         }
         catch (SshAuthenticationException)
         {
+            _mainForm?.SetSessionState(SessionState.Disconnected);
+            _mainForm?.Note("Falha na autenticação.");
             MessageBox.Show(
                 "Falha na autenticação. Confira usuário e senha. O sshd do z-server-01 precisa aceitar senha.",
                 "Z-Lab",
@@ -183,7 +197,9 @@ internal sealed class TrayApp : IDisposable
         }
         catch (Exception ex)
         {
+            _mainForm?.SetSessionState(SessionState.Disconnected);
             var reason = _session.LastReject;
+            _mainForm?.Note(string.IsNullOrWhiteSpace(reason) ? ex.Message : reason);
             MessageBox.Show(
                 string.IsNullOrWhiteSpace(reason) ? ex.Message : reason,
                 "Z-Lab",
@@ -200,6 +216,7 @@ internal sealed class TrayApp : IDisposable
     {
         _session.EndSession();
         _mainForm?.Note("Sessão encerrada. A senha foi zerada.");
+        _mainForm?.SetSessionState(SessionState.Disconnected);
     }
 
     private void RebuildMenu()
@@ -227,9 +244,9 @@ internal sealed class TrayApp : IDisposable
         }
 
         _menu.Items.Add(new ToolStripSeparator());
-        _menu.Items.Add("Liga", null, async (_, _) => await WakeAsync());
+        _menu.Items.Add("Ligar servidor", null, async (_, _) => await WakeAsync());
         _menu.Items.Add("Encerrar sessão", null, (_, _) => EndSession());
-        _menu.Items.Add("Sair", null, async (_, _) => await RequestExitAsync());
+        _menu.Items.Add("Fechar Z-Lab", null, async (_, _) => await RequestExitAsync());
         UpdateTooltip(statuses);
     }
 
@@ -333,8 +350,16 @@ internal sealed class TrayApp : IDisposable
         _watcher.SnapshotUpdated -= OnSnapshot;
         _watcher.Dispose();
         _session.Dispose();
-        _notifyIcon.Visible = false;
-        _notifyIcon.Dispose();
+        try
+        {
+            _notifyIcon.Visible = false;
+            _notifyIcon.Dispose();
+        }
+        catch
+        {
+            // already disposed on ExitProcess
+        }
+
         _menu.Dispose();
         _icon.Dispose();
         _mainForm?.Dispose();

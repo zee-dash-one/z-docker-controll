@@ -20,6 +20,7 @@ Comando para o Cursor: **"leia `.todo/00-LEIA-ME.md` e execute a próxima tarefa
 | 4 | `04-cards-de-servico.md` | Cards de serviço novos em grade responsiva, com status, endereço, mini monitor por container e ações por ícone | 03 | `mockup-com-sessao.png` |
 | 5 | `05-mausbot-codigo-de-acesso.md` | Botão "Código de acesso" no card do MausBot, com popover e Copiar, sem gravar o código | 04 | `mockup-mausbot-codigo.png` |
 | 6 | `06-saida-recolhivel-e-polimento.md` | Painel "Saída" recolhível, DPI, redimensionamento, bandeja, tema persistido | 05 | todos |
+| 7 | `07-tailscale-wsl-windows.md` | Um Tailscale userspace no Docker do WSL, SOCKS5 só em `127.0.0.1`, para o Windows usar a tailnet sem o app (NetExtender) | 06 | nenhum |
 
 ## Referência visual (obrigatória)
 
@@ -37,9 +38,10 @@ Todos os números dos mockups são **exemplos**. Os ícones do mockup são SVG s
 - Repositório: `C:\GIT\ZAPFCOORP\router-ctrl`, solução `ZLab.sln`.
 - App: **.NET 8 WinForms** (`net8.0-windows`), sem biblioteca de UI. A UI fica em `src/ZLab` (`MainForm.cs` montado em código, `LoginForm.cs`, `TrayApp.cs`, `Program.cs`).
 - Lógica em `src/ZLab.Core/Services` (`SshSession`, `ServerMonitor`, `HostReadings`, `RemoteCommands`, `ContainerService`, `DockerCli`, `ComposePsParser`, `StatusWatcher`, `WakeOnLan`, `ServiceCatalogStore`, `BackupService`...) e `src/ZLab.Core/Models` (`ServiceItem`, `AppSettings`...). Testes em `tests/`.
-- Servidor: `z-server-01`, Ubuntu 26.04, `melchior@192.168.0.112`, chave em `C:\Users\htzc\.ssh\id_ed25519_zserver`. Intel i3-4170 (4 threads), 16 GB de RAM.
+- **Dados do z-server-01** (IP, MAC, rede, hardware, Compose): leia `C:\GIT\ZAPFCOORP\z-server-01\README.md` — é a fonte de verdade. Não use IPs `192.168.0.x` (rede antiga).
+- Servidor: `z-server-01`, Ubuntu 26.04, `melchior@192.168.2.37`, chave em `C:\Users\htzc\.ssh\id_ed25519_zserver`. Intel i3-4170 (4 threads), 16 GB de RAM.
 - Discos: `/` 49 GB (LVM `ubuntu-lv`), `/var/lib/docker` 147 GB (`docker-lv`), `/data` (HD de 500 GB, **ainda não montado**: o app mostra "Não instalado").
-- Serviços (cards): 9Router `http://192.168.0.112:20128`, OmniRoute `http://192.168.0.112:20129`, MausBot `https://mausbot-serve.mandrill-court.ts.net`, Tailscale zlab `https://zlab.mandrill-court.ts.net`, Tailscale 9Router, Tailscale MausBot.
+- Serviços (cards): 9Router `http://192.168.2.37:20128`, OmniRoute `http://192.168.2.37:20129`, MausBot `https://mausbot-serve.mandrill-court.ts.net`, Tailscale zlab `https://zlab.mandrill-court.ts.net`, Tailscale 9Router, Tailscale MausBot.
 
 ### Decisão de tecnologia (não reabrir)
 

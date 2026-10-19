@@ -22,7 +22,7 @@ internal sealed class LoginForm : Form
             Top = 16,
             Width = 388,
             Height = 32,
-            Text = "Servidor 192.168.0.112, porta 22. A chave do disco não entra nesta sessão."
+            Text = "Servidor 192.168.2.37, porta 22. A chave do disco não entra nesta sessão."
         };
         var userLabel = new Label { Left = 16, Top = 56, Width = 80, Text = "Usuário" };
         _user.Left = 100;

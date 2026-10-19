@@ -18,7 +18,7 @@
 
 Not in the process: PowerShell 5 runspace (it does not load in .NET 8), `ssh.exe`, Docker CLI on WSL, portproxy, a Compose library, a DI framework.
 
-IPv4: the session dials `192.168.0.112` and Wake uses `192.168.0.255`. Image pull runs on the server. The script `scripts/fix-wsl-docker-ipv4.sh` is not the Atualizar failure path anymore.
+IPv4: the session dials `192.168.2.37` and Wake uses `192.168.2.255`. Image pull runs on the server. The script `scripts/fix-wsl-docker-ipv4.sh` is not the Atualizar failure path anymore.
 
 ## 2. Layout
 

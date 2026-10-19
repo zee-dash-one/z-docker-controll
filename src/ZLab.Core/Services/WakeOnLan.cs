@@ -9,7 +9,7 @@ namespace ZLab.Services;
 public static class WakeOnLan
 {
     public const string MacAddress = "FC:AA:14:F9:80:D4";
-    public const string BroadcastAddress = "192.168.0.255";
+    public const string BroadcastAddress = "192.168.2.255";
     public const int UdpPort = 9;
 
     public static byte[] BuildMagicPacket(string mac)

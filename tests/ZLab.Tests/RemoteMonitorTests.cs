@@ -158,8 +158,8 @@ public class KnownHostsTrustTests
     {
         var key = new byte[] { 1, 2, 3, 4 };
         var wire = KnownHostsTrust.EncodeWireKey("ssh-ed25519", key);
-        var line = "192.168.0.112 ssh-ed25519 " + Convert.ToBase64String(wire);
-        Assert.True(KnownHostsTrust.IsTrusted(line, "192.168.0.112", 22, "ssh-ed25519", key));
+        var line = "192.168.2.37 ssh-ed25519 " + Convert.ToBase64String(wire);
+        Assert.True(KnownHostsTrust.IsTrusted(line, "192.168.2.37", 22, "ssh-ed25519", key));
     }
 
     [Fact]
@@ -167,8 +167,8 @@ public class KnownHostsTrustTests
     {
         var key = new byte[] { 1, 2, 3, 4 };
         var wire = KnownHostsTrust.EncodeWireKey("ssh-ed25519", key);
-        var line = "192.168.0.112 ssh-ed25519 " + Convert.ToBase64String(wire);
-        Assert.False(KnownHostsTrust.IsTrusted(line, "192.168.0.112", 22, "ssh-ed25519", new byte[] { 9, 9, 9, 9 }));
+        var line = "192.168.2.37 ssh-ed25519 " + Convert.ToBase64String(wire);
+        Assert.False(KnownHostsTrust.IsTrusted(line, "192.168.2.37", 22, "ssh-ed25519", new byte[] { 9, 9, 9, 9 }));
     }
 
     [Fact]
@@ -178,16 +178,16 @@ public class KnownHostsTrustTests
         var wire = KnownHostsTrust.EncodeWireKey("ssh-ed25519", key);
         var salt = new byte[] { 9, 8, 7, 6 };
         using var hmac = new HMACSHA1(salt);
-        var hash = hmac.ComputeHash(Encoding.ASCII.GetBytes("192.168.0.112"));
+        var hash = hmac.ComputeHash(Encoding.ASCII.GetBytes("192.168.2.37"));
         var marker = "|1|" + Convert.ToBase64String(salt) + "|" + Convert.ToBase64String(hash);
         var line = marker + " ssh-ed25519 " + Convert.ToBase64String(wire);
-        Assert.True(KnownHostsTrust.IsTrusted(line, "192.168.0.112", 22, "ssh-ed25519", key));
-        Assert.False(KnownHostsTrust.IsTrusted(line, "192.168.0.113", 22, "ssh-ed25519", key));
+        Assert.True(KnownHostsTrust.IsTrusted(line, "192.168.2.37", 22, "ssh-ed25519", key));
+        Assert.False(KnownHostsTrust.IsTrusted(line, "192.168.2.38", 22, "ssh-ed25519", key));
     }
 
     [Fact]
     public void Missing_file_trusts_nothing()
     {
-        Assert.False(KnownHostsTrust.IsTrusted(null, "192.168.0.112", 22, "ssh-ed25519", new byte[] { 1 }));
+        Assert.False(KnownHostsTrust.IsTrusted(null, "192.168.2.37", 22, "ssh-ed25519", new byte[] { 1 }));
     }
 }

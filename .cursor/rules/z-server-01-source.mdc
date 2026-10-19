@@ -1,0 +1,24 @@
+---
+description: Fonte de verdade do z-server-01 (IP, MAC, hardware, rede, serviços)
+alwaysApply: true
+---
+
+# Dados do z-server-01
+
+A fonte de verdade da máquina, rede, disco, acessos, Docker e serviços do **z-server-01** é:
+
+`C:\GIT\ZAPFCOORP\z-server-01\README.md`
+
+(GitHub: [zee-dash-one/z-server-01](https://github.com/zee-dash-one/z-server-01).)
+
+## Regras para agentes
+
+- Antes de hardcodar ou documentar IP, MAC, broadcast Wake-on-LAN, hostname, usuário SSH, portas LAN, volumes LVM ou nomes Tailscale do servidor, **leia esse README** (ou confirme que o valor no código já bate com ele).
+- Não invente IP antigo (`192.168.0.x` era a rede do D-Link; desde 19/10/2026 a LAN é `192.168.2.0/24`).
+- Valores usuais (podem mudar — confira o README):
+  - Host: `192.168.2.37` · usuário `melchior` · SSH 22
+  - Broadcast WOL: `192.168.2.255` · MAC `FC:AA:14:F9:80:D4`
+  - PC de gestão NBPITANG-491: `192.168.2.36`
+  - Roteador Huawei: `192.168.2.1`
+- Senhas, chaves privadas e auth keys **não** estão no README; o texto indica onde ficam (fora do Git).
+- No router-ctrl, o alvo SSH/WOL no código fica em `RemoteCommands.Host` e `WakeOnLan` — alinha com o README ao mudar a rede.

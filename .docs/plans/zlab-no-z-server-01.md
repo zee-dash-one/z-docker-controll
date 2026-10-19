@@ -2,7 +2,7 @@
 
 **Status:** plano do monitor (sem implementação)  
 **Exe:** `ZLab.exe`, WinForms, .NET 8, neste repositório — [`.docs/technologies.md`](../technologies.md) §1  
-**Máquina:** [z-server-01](../../../z-server-01/README.md) — Ubuntu, `melchior`, `192.168.0.112`, Compose em `/opt/zlab`  
+**Máquina:** [z-server-01](../../../z-server-01/README.md) — Ubuntu, `melchior`, `192.168.2.37`, Compose em `/opt/zlab`  
 **Fonte do que roda:** [`zlab/docker-compose.yml`](../../../z-server-01/zlab/docker-compose.yml) (projeto `zlab`), já copiado em `/opt/zlab`  
 **Fora deste arquivo:** código C#, edição de [`config/services.default.json`](../../config/services.default.json), desligar container no WSL
 
@@ -39,7 +39,7 @@ No servidor o mesmo nome de produto já está em outra forma. Docker CE 29.9.1 e
 
 O nome do container coincide com o nome do serviço. O monitor usa essa lista fechada. Não há campo para inventar um sétimo nome.
 
-O PC que abre o exe é o NBPITANG-491 (`192.168.0.108`, Wi-Fi). O shell desse PC é o Windows PowerShell 5: `;` separa comandos, `&&` não existe. O monitor herda essa restrição: atualizar um serviço são duas invocações, nunca uma string com `&&`.
+O PC que abre o exe é o NBPITANG-491 (`192.168.2.36`, Wi-Fi). O shell desse PC é o Windows PowerShell 5: `;` separa comandos, `&&` não existe. O monitor herda essa restrição: atualizar um serviço são duas invocações, nunca uma string com `&&`.
 
 ---
 
@@ -47,14 +47,14 @@ O PC que abre o exe é o NBPITANG-491 (`192.168.0.108`, Wi-Fi). O shell desse PC
 
 Cada sessão pede usuário e senha. A chave SSH sozinha não abre o monitor. A chave `C:\Users\htzc\.ssh\id_ed25519_zserver` continua no PC para o uso humano já documentado no README do servidor; o `ZLab.exe` não a usa para entrar.
 
-O alvo é fixo: `192.168.0.112`, porta 22. A conta que existe hoje é `melchior`. O diálogo ainda pede o usuário, para a sessão não nascer de um arquivo. A senha fica só na memória da sessão (buffer zerado ao fechar o exe ou ao encerrar a sessão). Não entra no Git, não entra em `%AppData%\ZLab\services.json`, não entra no seed `services.default.json`, não entra em log e não aparece em `argv`.
+O alvo é fixo: `192.168.2.37`, porta 22. A conta que existe hoje é `melchior`. O diálogo ainda pede o usuário, para a sessão não nascer de um arquivo. A senha fica só na memória da sessão (buffer zerado ao fechar o exe ou ao encerrar a sessão). Não entra no Git, não entra em `%AppData%\ZLab\services.json`, não entra no seed `services.default.json`, não entra em log e não aparece em `argv`.
 
 O pedido de senha usa um destes dois caminhos, os dois com a senha fora da linha de comando:
 
 - um askpass de vida curta, ligado por `SSH_ASKPASS` e `SSH_ASKPASS_REQUIRE=force`, que recebe a senha do processo pai por handle herdado ou pela entrada padrão, nunca por argumento;
 - uma API SSH dentro do processo, que recebe a senha em memória.
 
-A invocação do cliente, quando o caminho for o `ssh.exe`, leva `PreferredAuthentications=password`, `PubkeyAuthentication=no` e `NumberOfPasswordPrompts=1`. Com isso a chave em disco não satisfaz o login. `StrictHostKeyChecking=yes`: a entrada já conhecida de `192.168.0.112` em `known_hosts` permanece; chave de host nova ou trocada interrompe a sessão.
+A invocação do cliente, quando o caminho for o `ssh.exe`, leva `PreferredAuthentications=password`, `PubkeyAuthentication=no` e `NumberOfPasswordPrompts=1`. Com isso a chave em disco não satisfaz o login. `StrictHostKeyChecking=yes`: a entrada já conhecida de `192.168.2.37` em `known_hosts` permanece; chave de host nova ou trocada interrompe a sessão.
 
 `TS_AUTHKEY` fica nos `.env` do servidor (`/opt/zlab/tailscale/.env`, `tailscale-9router/.env`, `tailscale-mausbot/.env`), modo 600, fora do Git. O monitor não lê e não grava esses arquivos.
 
@@ -204,8 +204,8 @@ Em casa, na LAN, o monitor abre:
 
 | Serviço | URL |
 |---------|-----|
-| 9Router | `http://192.168.0.112:20128` |
-| OmniRoute | `http://192.168.0.112:20129` |
+| 9Router | `http://192.168.2.37:20128` |
+| OmniRoute | `http://192.168.2.37:20129` |
 | MausBot | sem URL de LAN; de fora da máquina o caminho é `https://mausbot-serve.mandrill-court.ts.net` |
 
 O aplicativo Tailscale não é instalado no Windows. O NBPITANG-491 usa o NetExtender em túnel dividido; o cliente Tailscale nesse PC conflita com esse túnel. Os três `https://*.mandrill-court.ts.net` são rótulos para um aparelho que já está nesta tailnet (a conferência no celular continua a tarefa 05 do servidor). Neste notebook o monitor não tenta resolver esses nomes como se o app estivesse instalado.
@@ -222,7 +222,7 @@ O botão Liga repete o pacote mágico de [`scripts/wake-zserver.ps1`](../../../z
 |-------|--------|
 | MAC | `FC:AA:14:F9:80:D4` (`enp2s0`) |
 | Transporte | UDP, porta 9 |
-| Destino | broadcast `192.168.0.255` |
+| Destino | broadcast `192.168.2.255` |
 | Pacote | 6 bytes `FF`, mais o MAC repetido 16 vezes (102 bytes) |
 | Onde nasce | no próprio processo (runspace PowerShell 5, ou o mesmo datagrama em C#). Sem caixa de comando |
 

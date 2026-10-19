@@ -7,7 +7,7 @@ namespace ZLab.Services;
 /// </summary>
 public static class RemoteCommands
 {
-    public const string Host = "192.168.0.112";
+    public const string Host = "192.168.2.37";
     public const int Port = 22;
     public const string StatsFormat = "{{.CPUPerc}}/{{.MemUsage}}/{{.PIDs}}";
 
@@ -16,8 +16,8 @@ public static class RemoteCommands
 
     public static IReadOnlyList<RemoteService> Services { get; } = new RemoteService[]
     {
-        new("9router", "9Router", false, "http://192.168.0.112:20128", "https://9router-serve.mandrill-court.ts.net"),
-        new("omniroute", "OmniRoute", false, "http://192.168.0.112:20129", "https://zlab.mandrill-court.ts.net"),
+        new("9router", "9Router", false, "http://192.168.2.37:20128", "https://9router-serve.mandrill-court.ts.net"),
+        new("omniroute", "OmniRoute", false, "http://192.168.2.37:20129", "https://zlab.mandrill-court.ts.net"),
         new("mausbot", "MausBot", false, null, "https://mausbot-serve.mandrill-court.ts.net"),
         new("tailscale", "Tailscale zlab", true, null, "https://zlab.mandrill-court.ts.net"),
         new("tailscale-9router", "Tailscale 9Router", true, null, "https://9router-serve.mandrill-court.ts.net"),

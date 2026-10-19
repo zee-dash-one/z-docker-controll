@@ -12,7 +12,7 @@
 
 ## 1. Resumo
 
-O Z-Lab é um programa Windows de bandeja. O alvo é o z-server-01 (`192.168.0.112`, conta pedida no diálogo, Compose em `/opt/zlab`).
+O Z-Lab é um programa Windows de bandeja. O alvo é o z-server-01 (`192.168.2.37`, conta pedida no diálogo, Compose em `/opt/zlab`).
 
 A lista tem seis serviços e não cresce por JSON: `9router`, `omniroute`, `mausbot`, `tailscale`, `tailscale-9router`, `tailscale-mausbot`. Os três últimos usam `--profile tailnet`.
 
@@ -22,8 +22,8 @@ Cada sessão pede usuário e senha. A senha fica na memória e é zerada ao ence
 
 - Lê uptime, carga, memória e disco (`/`, `/var/lib/docker`, `/data`) no intervalo `pollSeconds` (padrão 8).
 - Por serviço: Subir, Parar, Atualizar (`pull` e, se o código for 0, `up -d`), Criar (`up -d` só sem container), Logs, Uso.
-- Abre `http://192.168.0.112:20128` e `:20129`. Os nomes `https://*.mandrill-court.ts.net` são rótulo.
-- Liga envia o pacote mágico (MAC `FC:AA:14:F9:80:D4`, UDP 9, broadcast `192.168.0.255`) e espera a porta 22 por até 2 minutos.
+- Abre `http://192.168.2.37:20128` e `:20129`. Os nomes `https://*.mandrill-court.ts.net` são rótulo.
+- Liga envia o pacote mágico (MAC `FC:AA:14:F9:80:D4`, UDP 9, broadcast `192.168.2.255`) e espera a porta 22 por até 2 minutos.
 - Desligar e Reiniciar pedem confirmação e mandam `shutdown -h now` ou `reboot`.
 - Sair não para container no servidor.
 

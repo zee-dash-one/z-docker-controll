@@ -23,3 +23,6 @@ C:/GIT/ZAPFCOORP/router-ctrl/src/ZLab.Core/obj/Release/net8.0/refint/ZLab.Core.d
 C:/GIT/ZAPFCOORP/router-ctrl/src/ZLab.Core/obj/Release/net8.0/ZLab.Core.pdb
 C:/GIT/ZAPFCOORP/router-ctrl/src/ZLab.Core/obj/Release/net8.0/ref/ZLab.Core.dll
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab.Core/obj/Release/net8.0/ZLab.Core.csproj.AssemblyReference.cache
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/.todo/_out/ZLab.Core.deps.json
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/.todo/_out/ZLab.Core.dll
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/.todo/_out/ZLab.Core.pdb

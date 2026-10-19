@@ -9,7 +9,7 @@ The panel is a lab bench for one server, not a catalog of disabled templates and
 
 ```text
 ┌─ Z-Lab ─────────────────────────────────────────────┐
-│ Sem sessão / usuário@192.168.0.112                   │
+│ Sem sessão / usuário@192.168.2.37                   │
 │ [Liga] [Desligar] [Reiniciar] [Entrar] [Encerrar sessão] [Sair]
 │ Tempo no ar / Carga / Memória / Disco / / Docker / /data
 │ ┌ card ┐ ┌ card ┐ ┌ card ┐  (seis serviços)          │

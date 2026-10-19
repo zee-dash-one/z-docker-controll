@@ -19,7 +19,7 @@ Tamanho inicial 1280 x 800, mínimo 1024 x 700, centralizada. `BackColor = Bg`. 
 
 1. **`HeaderBar`** (novo, `src/ZLab/Ui/HeaderBar.cs`), `Dock = Top`, altura 60, fundo `Surface`, linha de 1 px `Stroke` embaixo, padding lateral 24. Da esquerda para a direita:
    - marca: quadrado 32 x 32 raio 8 com gradiente `Accent` → `#8B5CF6` e "Z" branco; ao lado "Z-Lab" (`Title`) e, embaixo, "Painel do z-server-01" (`Caption`, `Text3`);
-   - **chip de sessão** (altura 28, pílula, fundo `Surface2`, borda `Stroke`): ponto verde + `melchior@192.168.0.112` + "· Sessão aberta" quando conectado; ponto `Muted` + "Sem sessão" quando não;
+   - **chip de sessão** (altura 28, pílula, fundo `Surface2`, borda `Stroke`): ponto verde + `melchior@192.168.2.37` + "· Sessão aberta" quando conectado; ponto `Muted` + "Sem sessão" quando não;
    - espaço flexível;
    - **grupo Sessão**: `ZButton` "Entrar" (glifo `Unlock`) e `ZButton` "Encerrar sessão" (glifo `Lock`), gap 8;
    - divisória vertical 1 x 28 `Stroke`;
@@ -59,7 +59,7 @@ Tamanho inicial 1280 x 800, mínimo 1024 x 700, centralizada. `BackColor = Bg`. 
 ## Aceite
 
 - [ ] Ao abrir: só cabeçalho, estado vazio e Saída. Entrar (azul) habilitado; Encerrar sessão visível e desabilitado; Fechar Z-Lab visível. Nada de servidor nem de serviços na tela. Igual a `mockup-sem-sessao.png`.
-- [ ] Depois de entrar: Entrar desabilitado, Encerrar sessão habilitado, chip mostra `melchior@192.168.0.112 · Sessão aberta`, aparecem as seções Servidor (com Ligar/Reiniciar/Desligar à direita) e Serviços.
+- [ ] Depois de entrar: Entrar desabilitado, Encerrar sessão habilitado, chip mostra `melchior@192.168.2.37 · Sessão aberta`, aparecem as seções Servidor (com Ligar/Reiniciar/Desligar à direita) e Serviços.
 - [ ] Encerrar sessão: fecha o SSH, para os timers e esconde tudo de novo.
 - [ ] Ligar, Reiniciar e Desligar pedem confirmação e ficam fora do cabeçalho.
 - [ ] Fechar Z-Lab fecha o app inteiro e o ícone some da bandeja.

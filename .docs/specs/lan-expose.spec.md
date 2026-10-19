@@ -7,7 +7,7 @@
 
 ## Goal
 
-9Router opens `http://192.168.0.112:20128`. OmniRoute opens `http://192.168.0.112:20129`. MausBot has no LAN URL. The three `https://*.mandrill-court.ts.net` names are labels. The Windows Tailscale app is not installed.
+9Router opens `http://192.168.2.37:20128`. OmniRoute opens `http://192.168.2.37:20129`. MausBot has no LAN URL. The three `https://*.mandrill-court.ts.net` names are labels. The Windows Tailscale app is not installed.
 
 ## In scope
 

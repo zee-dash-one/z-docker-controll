@@ -15,7 +15,7 @@ A suíte `dotnet test ZLab.sln -c Release` no SDK do WSL passou (109 testes), in
 ## Dúvidas ainda abertas
 
 1. **`sshd` aceita senha?** O README do z-server-01 documenta o login humano pela chave. Se `PasswordAuthentication` estiver desligado, o diálogo falha. Não conferi o `sshd -T` na máquina.
-2. **`known_hosts` ao vivo.** O teste cobre linha clara e host com hash `|1|`. Não abri o `known_hosts` deste PC para ver se a chave que a SSH.NET entrega (bytes crus ou blob wire) é a mesma da linha de `192.168.0.112`. Se não bater, o login recusa — é o comportamento pedido, mas pode ser um falso negativo.
+2. **`known_hosts` ao vivo.** O teste cobre linha clara e host com hash `|1|`. Não abri o `known_hosts` deste PC para ver se a chave que a SSH.NET entrega (bytes crus ou blob wire) é a mesma da linha de `192.168.2.37`. Se não bater, o login recusa — é o comportamento pedido, mas pode ser um falso negativo.
 3. **`/usr/sbin/reboot` no Ubuntu 26.04.** Se for link para `systemctl`, a linha do sudoers não vale até ser trocada. O script `aplicar-sudoers.sh` imprime o `readlink` e não edita o arquivo.
 4. **Sudoers e grupo `docker` ainda não foram aplicados.** Enquanto `melchior-nopasswd` e o grupo existirem, a trava estreita não segura uma sessão interativa. O exe só emite a lista mesmo assim.
 5. **Tarefa 08 da BIOS.** O Liga envia o datagrama e, se a porta 22 não abrir em 2 minutos, avisa. Não marca a tarefa como feita.
@@ -26,7 +26,7 @@ A suíte `dotnet test ZLab.sln -c Release` no SDK do WSL passou (109 testes), in
 10. **Cópia da senha dentro da SSH.NET** vive até o `Dispose` do cliente. O `char[]` do Z-Lab é zerado ao encerrar a sessão; a biblioteca guarda a cópia dela.
 11. **Health HTTP/TCP** continua fora, como na SPEC antiga (RF20).
 12. **IPv6 no pull.** O Atualizar roda `docker compose pull` no servidor. Se o daemon de lá preferir AAAA, o stderr volta no painel. O script `fix-wsl-docker-ipv4.sh` não entra mais nesse caminho.
-13. **Um Tailscale no WSL, depois da limpeza.** O Docker do WSL não fica vazio: o próximo projeto é um único container Tailscale, para o Windows usar a tailnet sem instalar o aplicativo (NetExtender em túnel dividido). 9Router, OmniRoute e MausBot não voltam para lá. Ainda não está fechado como o tráfego chega no Windows: proxy em localhost ou portproxy de portas escolhidas. Não pode instalar rota que tome o lugar do NetExtender. O userspace do Tailscale dentro do Docker não cria interface de tailnet no Windows.
+13. **Um Tailscale no WSL, depois da limpeza.** Tarefa [`.todo/07-tailscale-wsl-windows.md`](../.todo/07-tailscale-wsl-windows.md): um container userspace, SOCKS5 só em `127.0.0.1:1055`, sem app no Windows e sem rota que tome o lugar do NetExtender. 9Router, OmniRoute e MausBot não voltam para o WSL.
 
 ## Cobertura
 

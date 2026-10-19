@@ -23,3 +23,10 @@
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab/obj/Release/net8.0-windows/ZLab.pdb
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab/obj/Release/net8.0-windows/ZLab.genruntimeconfig.cache
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/src/ZLab/obj/Release/net8.0-windows/ref/ZLab.dll
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/.todo/_out/Assets/z-lab.ico
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/.todo/_out/config/monitor.settings.json
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/.todo/_out/ZLab
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/.todo/_out/ZLab.deps.json
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/.todo/_out/ZLab.runtimeconfig.json
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/.todo/_out/ZLab.dll
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/.todo/_out/ZLab.pdb

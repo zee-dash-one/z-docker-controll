@@ -20,7 +20,7 @@ O MausBot gera um código para o primeiro acesso em `https://mausbot-serve.mandr
 
 1. Descubra o nome do container do MausBot pelo catálogo (`ServiceCatalogStore`/`ServiceItem`).
 2. No servidor, só leitura, procure o **formato** da linha no log. No PowerShell (aspas simples para o `$` não expandir):
-   `ssh -i C:\Users\htzc\.ssh\id_ed25519_zserver melchior@192.168.0.112 'docker logs --timestamps --tail 2000 NOME 2>&1 | grep -inE "code|código|codigo|pair|token|otp|pin|first|setup|login" | tail -n 20'`
+   `ssh -i C:\Users\htzc\.ssh\id_ed25519_zserver melchior@192.168.2.37 'docker logs --timestamps --tail 2000 NOME 2>&1 | grep -inE "code|código|codigo|pair|token|otp|pin|first|setup|login" | tail -n 20'`
    (troque `NOME` pelo nome real e use o prefixo do Docker que o `DockerCli` usa).
 3. Se não estiver no log, procure num arquivo do volume, só leitura: `docker inspect NOME --format '{{json .Mounts}}'` para ver os volumes e `docker exec NOME ls` / `cat` no arquivo provável. Não altere nada.
 4. Registre **apenas o formato**, com o valor trocado por `XXXXXX`, por exemplo: `linha do log: "... pairing code: XXXXXX ..."; regex: pairing code:\s*(\S+)`. Nunca escreva o valor real.

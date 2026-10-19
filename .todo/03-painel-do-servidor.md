@@ -107,7 +107,7 @@ Regras do formato: uma métrica por linha, `chave=valor`; discos como `usados_by
 
 1. Leia `ServerMonitor.cs`, `HostReadings.cs`, `RemoteCommands.cs`, `SshSession.cs` e o trecho do `MainForm` que mostra "Tempo no", "Carga", "Memória" e "Disco".
 2. Crie o script, o recurso embutido, os modelos, o parser, a calculadora de CPU, o `DisplayFormat`, o `StatsPoller` e o presenter.
-3. Teste o script no servidor só lendo: no PowerShell, `Get-Content -Raw .\scripts\zlab-stats.sh | ssh -i C:\Users\htzc\.ssh\id_ed25519_zserver melchior@192.168.0.112 'bash -s'`. Confira se `disk_docker` vem com números e `disk_data=absent`. Se `/var/lib/docker` aparecer como `absent`, registre e use `df` sem o teste de `mountpoint` só para essa chave.
+3. Teste o script no servidor só lendo: no PowerShell, `Get-Content -Raw .\scripts\zlab-stats.sh | ssh -i C:\Users\htzc\.ssh\id_ed25519_zserver melchior@192.168.2.37 'bash -s'`. Confira se `disk_docker` vem com números e `disk_data=absent`. Se `/var/lib/docker` aparecer como `absent`, registre e use `df` sem o teste de `mountpoint` só para essa chave.
 4. Testes em `tests/` (dados de exemplo, nada real):
    - `StatsParser`: a saída de exemplo acima vira os valores certos; `disk_data=absent` → `Present = false`; linha lixo é ignorada; faltando `mem_total_kb` → `Host` nulo.
    - `CpuUsageCalculator`: primeira amostra `null`; duas amostras dão o percentual certo; contador menor que o anterior → `null`.
@@ -134,7 +134,7 @@ A tarefa 04 acrescenta a seção de containers ao mesmo script e refaz os cards.
 - Criados: `scripts/zlab-stats.sh`, `.gitattributes`, `HostStats`/`DiskUsage`, `StatsParser`, `CpuUsageCalculator`, `DisplayFormat`, `StatsPoller`, `EmbeddedScripts`, `ServerTilesPresenter`, `MetricsRow` no `DashboardPanel`.
 - Alterados: `SshSession.RunScript`, `ServerMonitor` (remove leitura cru de host), removido `HostReadings`, `MainForm`/`TrayApp`/`Program` ligam o poller no login e param no Encerrar sessão.
 - Recurso embutido: `ZLab.Scripts.zlab-stats.sh`.
-- SSH live: `192.168.0.112:22` timeout (servidor desligado). Não validado `disk_docker` no host; unitários cobrem `absent` e o exemplo da tarefa.
+- SSH live: `192.168.2.37:22` timeout (servidor desligado). Não validado `disk_docker` no host; unitários cobrem `absent` e o exemplo da tarefa.
 - Testes: StatsParser, CpuUsageCalculator, DisplayFormat, ServerTilesPresenter.
 - Removido: fluxo UI de `uptime`/`free`/`df` via `HostReadings`.
 

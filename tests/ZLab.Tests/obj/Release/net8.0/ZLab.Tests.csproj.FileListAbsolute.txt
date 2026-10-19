@@ -104,3 +104,12 @@
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/tests/ZLab.Tests/obj/Release/net8.0/ZLab.Tests.sourcelink.json
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/tests/ZLab.Tests/bin/Release/net8.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll
 /mnt/c/GIT/ZAPFCOORP/router-ctrl/tests/ZLab.Tests/bin/Release/net8.0/Microsoft.Extensions.Logging.Abstractions.dll
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/.todo/_out/.msCoverageSourceRootsMapping_ZLab.Tests
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/.todo/_out/xunit.runner.visualstudio.testadapter.dll
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/.todo/_out/xunit.runner.reporters.netcoreapp10.dll
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/.todo/_out/xunit.runner.utility.netcoreapp10.dll
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/.todo/_out/Fixtures/services.v1.json
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/.todo/_out/ZLab.Tests.deps.json
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/.todo/_out/ZLab.Tests.runtimeconfig.json
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/.todo/_out/ZLab.Tests.dll
+/mnt/c/GIT/ZAPFCOORP/router-ctrl/.todo/_out/ZLab.Tests.pdb

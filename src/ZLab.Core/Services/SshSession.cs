@@ -195,7 +195,7 @@ public sealed class SshSession : IDisposable
                     lock (_gate)
                     {
                         _lastReject =
-                            "A chave de host de 192.168.0.112 não confere com known_hosts. " +
+                            "A chave de host de 192.168.2.37 não confere com known_hosts. " +
                             "Conecte uma vez com ssh para registrar a chave. O Z-Lab não aceita chave nova.";
                     }
                 }

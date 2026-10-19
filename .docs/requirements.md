@@ -9,7 +9,7 @@ A V1 pedia catálogo JSON, Docker no WSL, backup, portproxy e parar tudo ao sair
 
 ## 1. Scope
 
-1. Tray + panel that operates the six Compose services on `192.168.0.112`.
+1. Tray + panel that operates the six Compose services on `192.168.2.37`.
 2. Password SSH session. No disk key. Host key must already be in `known_hosts`.
 3. Closed commands only (`sudo -n` + absolute paths). Update is two calls: `pull`, then `up -d` when pull exits 0.
 4. Host readings on the poll interval, plus per-service `ps -a --format json`.

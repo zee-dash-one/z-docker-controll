@@ -72,11 +72,6 @@
           },
           "runtimeIdentifierGraphPath": "/home/hill/.dotnet/sdk/8.0.425/PortableRuntimeIdentifierGraph.json"
         }
-      },
-      "runtimes": {
-        "win-x64": {
-          "#import": []
-        }
       }
     }
   }

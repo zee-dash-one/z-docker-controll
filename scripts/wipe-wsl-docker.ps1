@@ -7,7 +7,7 @@
 
 $ErrorActionPreference = "Stop"
 Write-Host "Isto apaga TODOS os containers e TODOS os volumes nomeados do Docker em Ubuntu-24.04."
-Write-Host "Imagens ficam. A pasta tailscale-9router no disco fica. O servidor 192.168.0.112 nao e alterado."
+Write-Host "Imagens ficam. A pasta tailscale-9router no disco fica. O servidor 192.168.2.37 nao e alterado."
 $typed = Read-Host "Digite APAGAR para continuar"
 if ($typed -ne "APAGAR") {
     Write-Host "Cancelado."

@@ -1,17 +1,37 @@
+using System.Globalization;
+using ZLab.Models;
 using ZLab.Services;
 
 namespace ZLab.Ui;
 
 /// <summary>
-/// Connected view: server metric tiles + services placeholder (cards in todo 04).
+/// Connected view: server metric tiles + service cards.
 /// </summary>
 public sealed class DashboardPanel : Panel
 {
     private readonly SectionHeader _serverHeader = new();
     private readonly MetricsRow _metrics = new();
     private readonly SectionHeader _servicesHeader = new();
-    private readonly Panel _servicesBody = new();
-    private readonly Label _servicesPlaceholder = new();
+    private readonly Label _updatedLabel = new();
+    private readonly ZButton _refresh = new()
+    {
+        Text = "Atualizar",
+        Glyph = Glyphs.Sync,
+        Compact = true,
+        Variant = ZButtonVariant.Ghost
+    };
+    private readonly ResponsiveGrid _grid = new()
+    {
+        MinItemWidth = 360,
+        MaxColumns = 3,
+        ItemHeight = 184,
+        Gap = 12,
+        Dock = DockStyle.Top
+    };
+    private readonly Dictionary<string, ServiceCard> _cards = new(StringComparer.Ordinal);
+    private DateTime _lastStatsLocal = DateTime.MinValue;
+    private readonly System.Windows.Forms.Timer _ageTimer = new() { Interval = 1000 };
+    private bool _hasReading;
 
     public MetricTile CpuTile => _metrics.Cpu;
     public MetricTile MemoryTile => _metrics.Memory;
@@ -44,6 +64,15 @@ public sealed class DashboardPanel : Panel
         Variant = ZButtonVariant.Danger
     };
 
+    public event EventHandler? RefreshRequested;
+    public event EventHandler<RemoteService>? StartRequested;
+    public event EventHandler<RemoteService>? StopRequested;
+    public event EventHandler<RemoteService>? LogsRequested;
+    public event EventHandler<RemoteService>? CreateRequested;
+    public event EventHandler<RemoteService>? UpdateRequested;
+    public event EventHandler<RemoteService>? UsageRequested;
+    public event EventHandler<string>? CardMessage;
+
     public DashboardPanel()
     {
         AutoScroll = true;
@@ -65,25 +94,36 @@ public sealed class DashboardPanel : Panel
         _metrics.Padding = new Padding(0, LogicalToDeviceUnits(8), 0, LogicalToDeviceUnits(24));
 
         _servicesHeader.Title = "Serviços";
-        _servicesHeader.Subtitle = "Compose em /opt/zlab";
+        _servicesHeader.Subtitle = "6 serviços";
+        _updatedLabel.AutoSize = true;
+        _updatedLabel.Font = Tokens.Caption();
+        _servicesHeader.Actions.Add(_updatedLabel);
+        _servicesHeader.Actions.Add(_refresh);
         _servicesHeader.Dock = DockStyle.Top;
         _servicesHeader.Height = LogicalToDeviceUnits(40);
+        _refresh.Click += (_, _) => RefreshRequested?.Invoke(this, EventArgs.Empty);
 
-        _servicesPlaceholder.Text = "Cards de serviço entram na tarefa 04.";
-        _servicesPlaceholder.Font = Tokens.Caption();
-        _servicesPlaceholder.AutoSize = true;
-        _servicesBody.Dock = DockStyle.Fill;
-        _servicesBody.Padding = new Padding(0, LogicalToDeviceUnits(8), 0, 0);
-        _servicesBody.Controls.Add(_servicesPlaceholder);
+        foreach (var service in RemoteCommands.Services)
+        {
+            var card = new ServiceCard();
+            card.Bind(service);
+            WireCard(card);
+            _cards[service.Id] = card;
+            _grid.Controls.Add(card);
+        }
 
-        Controls.Add(_servicesBody);
+        Controls.Add(_grid);
         Controls.Add(_servicesHeader);
         Controls.Add(_metrics);
         Controls.Add(_serverHeader);
 
         ThemeManager.ThemeChanged += OnTheme;
+        _ageTimer.Tick += (_, _) => UpdateAgeLabel();
+        _ageTimer.Start();
         ApplyColors();
         ApplyTiles(ServerTilesPresenter.Empty(), pushSpark: false);
+        SetServicesSummary(0, 0);
+        UpdateAgeLabel();
     }
 
     public void SetEnergyVisible(bool visible)
@@ -106,10 +146,116 @@ public sealed class DashboardPanel : Panel
             UptimeTile.FooterText = Glyphs.People + "  " + view.Uptime.FooterText;
     }
 
+    public void ApplyStats(StatsSnapshot snapshot, DateTimeOffset nowUtc)
+    {
+        _hasReading = true;
+        _lastStatsLocal = DateTime.Now;
+        var cores = snapshot.Host?.Cores > 0 ? snapshot.Host.Cores : 4;
+        var byName = snapshot.Containers.ToDictionary(c => c.Name, StringComparer.Ordinal);
+
+        var up = 0;
+        var down = 0;
+        foreach (var service in RemoteCommands.Services)
+        {
+            byName.TryGetValue(service.Id, out var c);
+            var view = ServiceCardPresenter.From(service, c, cores, nowUtc, hasReading: true);
+            if (_cards.TryGetValue(service.Id, out var card))
+                card.Apply(view);
+
+            var kind = ServiceCardPresenter.ToStatusKind(c, true);
+            if (kind == ContainerStatusKind.Up)
+                up++;
+            else
+                down++;
+        }
+
+        SetServicesSummary(up, down);
+        UpdateAgeLabel();
+    }
+
     public void ClearMetrics()
     {
         CpuTile.Spark.Clear();
         ApplyTiles(ServerTilesPresenter.Empty(), pushSpark: false);
+        _hasReading = false;
+        foreach (var service in RemoteCommands.Services)
+        {
+            if (_cards.TryGetValue(service.Id, out var card))
+                card.Apply(ServiceCardPresenter.From(service, null, 4, DateTimeOffset.UtcNow, false));
+        }
+
+        SetServicesSummary(0, 0);
+        UpdateAgeLabel();
+    }
+
+    public IReadOnlyDictionary<string, ContainerStatusKind> LastStatusMap(StatsSnapshot? snapshot)
+    {
+        var map = new Dictionary<string, ContainerStatusKind>(StringComparer.Ordinal);
+        var byName = snapshot?.Containers.ToDictionary(c => c.Name, StringComparer.Ordinal)
+                     ?? new Dictionary<string, ContainerStats>(StringComparer.Ordinal);
+        foreach (var service in RemoteCommands.Services)
+        {
+            byName.TryGetValue(service.Id, out var c);
+            map[service.Id] = ServiceCardPresenter.ToStatusKind(c, _hasReading);
+        }
+
+        return map;
+    }
+
+    private void WireCard(ServiceCard card)
+    {
+        card.StartClicked += (_, _) =>
+        {
+            if (card.Service is not null)
+                StartRequested?.Invoke(this, card.Service);
+        };
+        card.StopClicked += (_, _) =>
+        {
+            if (card.Service is not null)
+                StopRequested?.Invoke(this, card.Service);
+        };
+        card.LogsClicked += (_, _) =>
+        {
+            if (card.Service is not null)
+                LogsRequested?.Invoke(this, card.Service);
+        };
+        card.CreateClicked += (_, _) =>
+        {
+            if (card.Service is not null)
+                CreateRequested?.Invoke(this, card.Service);
+        };
+        card.UpdateClicked += (_, _) =>
+        {
+            if (card.Service is not null)
+                UpdateRequested?.Invoke(this, card.Service);
+        };
+        card.UsageClicked += (_, _) =>
+        {
+            if (card.Service is not null)
+                UsageRequested?.Invoke(this, card.Service);
+        };
+        card.OpenFailed += (_, msg) => CardMessage?.Invoke(this, msg);
+    }
+
+    private void SetServicesSummary(int up, int down)
+    {
+        var total = RemoteCommands.Services.Count;
+        // "6 serviços · 5 no ar · 1 parado" — "no ar" highlighted via plain text (WinForms Label).
+        _servicesHeader.Subtitle = total + " serviços · " + up + " no ar · " + down + " parado";
+        _servicesHeader.PerformLayout();
+    }
+
+    private void UpdateAgeLabel()
+    {
+        if (_lastStatsLocal == DateTime.MinValue || !_hasReading)
+        {
+            _updatedLabel.Text = "—";
+            return;
+        }
+
+        var sec = Math.Max(0, (int)(DateTime.Now - _lastStatsLocal).TotalSeconds);
+        _updatedLabel.Text = "atualizado há " + sec.ToString(CultureInfo.GetCultureInfo("pt-BR")) + " s";
+        _servicesHeader.PerformLayout();
     }
 
     private static void ApplyTile(
@@ -131,17 +277,17 @@ public sealed class DashboardPanel : Panel
         tile.ToolTipText = view.ToolTip;
         if (pushSpark && view.SparkSample is double sample)
             tile.Spark.Push(sample);
-        else if (view.SparkSample is null && footer == MetricFooterKind.Sparkline && view.ValueParts.Count == 1
-                 && view.ValueParts[0].Number == "—")
-        {
-            // keep existing spark samples until clear
-        }
     }
 
     protected override void Dispose(bool disposing)
     {
         if (disposing)
+        {
             ThemeManager.ThemeChanged -= OnTheme;
+            _ageTimer.Stop();
+            _ageTimer.Dispose();
+        }
+
         base.Dispose(disposing);
     }
 
@@ -151,9 +297,8 @@ public sealed class DashboardPanel : Panel
     {
         var p = ThemeManager.Current;
         BackColor = p.Bg;
-        _servicesBody.BackColor = p.Bg;
-        _servicesPlaceholder.ForeColor = p.Text3;
-        _servicesPlaceholder.BackColor = p.Bg;
+        _updatedLabel.ForeColor = p.Text3;
+        _updatedLabel.BackColor = p.Bg;
     }
 }
 

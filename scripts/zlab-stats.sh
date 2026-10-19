@@ -25,3 +25,22 @@ disk() { # $1 = chave, $2 = ponto de montagem
 disk root /
 disk docker /var/lib/docker
 disk data /data
+
+# --- seção containers (tarefa 04) ---
+echo "section=containers"
+if command -v docker >/dev/null 2>&1; then
+  ids=$(docker ps -aq 2>/dev/null)
+  if [ -n "$ids" ]; then
+    stats=$(docker stats --no-stream --format '{{.Name}}{{"\t"}}{{.CPUPerc}}{{"\t"}}{{.MemUsage}}' 2>/dev/null)
+    # shellcheck disable=SC2086
+    docker inspect --format '{{.Name}}{{"\t"}}{{.State.Status}}{{"\t"}}{{.State.StartedAt}}{{"\t"}}{{.RestartCount}}' $ids 2>/dev/null \
+    | sed 's#^/##' \
+    | while IFS=$'\t' read -r name state started restarts; do
+        line=$(printf '%s\n' "$stats" | awk -F'\t' -v n="$name" '$1==n{print $2"\t"$3; exit}')
+        if [ -n "$line" ]; then cpu=${line%%$'\t'*}; mem=${line#*$'\t'}; else cpu=-; mem=-; fi
+        printf 'c=%s\t%s\t%s\t%s\t%s\t%s\n' "$name" "$state" "$started" "$restarts" "$cpu" "$mem"
+      done
+  fi
+else
+  echo "docker=absent"
+fi

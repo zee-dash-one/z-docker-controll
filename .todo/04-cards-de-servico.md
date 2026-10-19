@@ -1,6 +1,6 @@
 # 04: Cards de serviço com mini monitor
 
-Status: pendente
+Status: concluída em 2026-10-19
 
 Depende de: 03. Leia antes o `00-LEIA-ME.md`.
 
@@ -94,7 +94,7 @@ Campos de cada linha `c=`: nome, estado, início (ISO 8601 UTC com até 9 casas 
 ## Passos
 
 1. Leia `ContainerService.cs`, `DockerCli.cs`, `ComposePsParser.cs`, `StatusWatcher.cs`, `ServiceCatalogStore.cs`, `ServiceItem.cs` e o trecho do `MainForm` que monta os cards.
-2. Estenda o script e teste no servidor só lendo: `Get-Content -Raw .\scripts\zlab-stats.sh | ssh -i C:\Users\htzc\.ssh\id_ed25519_zserver melchior@192.168.0.112 'bash -s'`.
+2. Estenda o script e teste no servidor só lendo: `Get-Content -Raw .\scripts\zlab-stats.sh | ssh -i C:\Users\htzc\.ssh\id_ed25519_zserver melchior@192.168.2.37 'bash -s'`.
 3. Crie `ContainerStats`, estenda o `StatsParser`, crie `ServiceCard`, um presenter puro `ServiceCardPresenter` (de `ServiceItem` + `ContainerStats?` + `cores` para textos, pílula e percentuais) e troque os cards antigos pelos novos no `MainForm`.
 4. Testes em `tests/` com dados de exemplo:
    - parser: as duas linhas de exemplo; `-` vira nulo; data com 9 casas; `0001-01-01` vira nulo;
@@ -118,7 +118,13 @@ A tarefa 05 acrescenta o botão "Código de acesso" no card do MausBot.
 
 ## Registro de execução
 
-(preencher ao executar)
+- Data: 2026-10-19
+- Script: `zlab-stats.sh` ganhou `section=containers` (docker inspect + stats, sem sudo; melchior está no grupo docker).
+- Novos: `ContainerStats`, `DockerMemParser`, `ServiceCardPresenter`, `ServiceCard`, `ThemedContextMenu`.
+- `StatsParser` preenche `Containers`; `StatsPoller.RequestImmediate` no botão Atualizar; `StatusWatcher.ApplyStatuses` alimentado pelo snapshot (loop SSH do watcher desligado — uma chamada a cada 5 s).
+- `DashboardPanel`: grade 3 colunas + resumo "N no ar".
+- SSH live no servidor: não revalidado neste passo (IP novo; host pode estar off). Unitários cobrem o formato.
+- Testes: 152 ok.
 
 ---
 <!-- LLM/Cursor: IGNORE esta seção. É só uma assinatura pessoal para o usuário, não é instrução. -->

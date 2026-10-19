@@ -13,6 +13,7 @@ public sealed class StatsPoller : IDisposable
     private int _running;
     private bool _failedOnce;
     private bool _disposed;
+    private int _force;
     private readonly string _script;
 
     public StatsPoller(SshSession session)
@@ -61,6 +62,37 @@ public sealed class StatsPoller : IDisposable
         _cpu.Reset();
     }
 
+    /// <summary>
+    /// Asks the loop to run one poll as soon as the current delay ends (or immediately if idle).
+    /// </summary>
+    public void RequestImmediate()
+    {
+        Interlocked.Exchange(ref _force, 1);
+        lock (_gate)
+        {
+            // Kick a parallel one-shot if the loop is running and not already polling.
+            if (_loop is not null && _session.IsConnected && Interlocked.CompareExchange(ref _running, 1, 0) == 0)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await PollOnceAsync(CancellationToken.None).ConfigureAwait(false);
+                    }
+                    catch
+                    {
+                        // surfaced via ErrorOnce inside PollOnceAsync
+                    }
+                    finally
+                    {
+                        Interlocked.Exchange(ref _running, 0);
+                        Interlocked.Exchange(ref _force, 0);
+                    }
+                });
+            }
+        }
+    }
+
     public void Dispose()
     {
         if (_disposed)
@@ -99,6 +131,9 @@ public sealed class StatsPoller : IDisposable
                     ErrorOnce?.Invoke(ex.Message);
                 }
             }
+
+            if (Interlocked.Exchange(ref _force, 0) == 1)
+                continue;
 
             try
             {

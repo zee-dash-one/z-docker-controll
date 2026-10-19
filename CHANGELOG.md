@@ -2,6 +2,16 @@
 
 ## 2026-10-19
 
+### todo 04: cards de serviço
+
+- `ServiceCard` em grade responsiva (3/2/1 colunas), pílula, endereço clicável, mini monitor CPU/memória.
+- `zlab-stats.sh` + parser com `section=containers`; StatusWatcher alimentado pelo StatsPoller (uma SSH/5 s).
+
+### rede: IP novo do z-server-01
+
+- Alvo SSH/LAN: `192.168.2.37` (antes `192.168.0.112`). Broadcast WOL: `192.168.2.255`.
+- Fonte de verdade: `C:\GIT\ZAPFCOORP\z-server-01\README.md`. Regra Cursor: `.cursor/rules/z-server-01-source.mdc`.
+
 ### todo 03: painel do servidor
 
 - Script `scripts/zlab-stats.sh` (recurso embutido) + `StatsPoller` a cada 5 s com sessão.

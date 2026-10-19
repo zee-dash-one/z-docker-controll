@@ -195,6 +195,61 @@ internal sealed class MainForm : Form
         var gap = new Padding(0, 0, LogicalToDeviceUnits(8), 0);
         _dashboard.WakeButton.Margin = gap;
         _dashboard.RebootButton.Margin = gap;
+
+        _dashboard.RefreshRequested += (_, _) => _stats.RequestImmediate();
+        _dashboard.StartRequested += async (_, s) =>
+            await MutateAsync("Subir " + s.DisplayName, () => _monitor.StartAsync(s.Id, CancellationToken.None));
+        _dashboard.StopRequested += async (_, s) =>
+        {
+            var confirm = MessageBox.Show(
+                "Parar " + s.DisplayName + " agora?",
+                "Z-Lab — Parar",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button2);
+            if (confirm != DialogResult.Yes)
+                return;
+            await MutateAsync("Parar " + s.DisplayName, () => _monitor.StopAsync(s.Id, CancellationToken.None));
+        };
+        _dashboard.CreateRequested += async (_, s) =>
+            await MutateAsync("Criar " + s.DisplayName, () => _monitor.CreateAsync(s.Id, CancellationToken.None));
+        _dashboard.UpdateRequested += async (_, s) =>
+        {
+            var confirm = MessageBox.Show(
+                RemoteCommands.UpdateConfirm,
+                "Z-Lab — Atualizar",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button2);
+            if (confirm != DialogResult.Yes)
+                return;
+            await MutateAsync("Atualizar " + s.DisplayName, () => _monitor.UpdateAsync(s.Id, CancellationToken.None));
+        };
+        _dashboard.LogsRequested += async (_, s) =>
+            await ShowOutputAsync(s.DisplayName + " logs", () => _monitor.LogsAsync(s.Id, CancellationToken.None));
+        _dashboard.UsageRequested += async (_, s) =>
+            await ShowOutputAsync(s.DisplayName + " uso", () => _monitor.StatsAsync(s.Id, CancellationToken.None));
+        _dashboard.CardMessage += (_, msg) => Note(msg);
+    }
+
+    private async Task ShowOutputAsync(string title, Func<Task<RemoteCommandResult>> action)
+    {
+        if (_busy)
+            return;
+        _busy = true;
+        ApplySessionState(_sessionState);
+        try
+        {
+            var result = await action().ConfigureAwait(true);
+            Note(title + " — código " + result.ExitCode);
+            Note(result.CombinedText());
+        }
+        finally
+        {
+            _busy = false;
+            ApplySessionState(_sessionState);
+            _stats.RequestImmediate();
+        }
     }
 
     private async Task PowerAsync(bool shutdown)
@@ -241,6 +296,7 @@ internal sealed class MainForm : Form
         {
             _busy = false;
             ApplySessionState(_sessionState);
+            _stats.RequestImmediate();
         }
     }
 
@@ -278,6 +334,9 @@ internal sealed class MainForm : Form
                 cpu = _stats.Cpu.Percent(snapshot.Host.CpuTotal, snapshot.Host.CpuIdle);
             var view = ServerTilesPresenter.From(snapshot.Host, cpu, DateTime.Now);
             _dashboard.ApplyTiles(view, pushSpark: cpu is not null);
+            _dashboard.ApplyStats(snapshot, DateTimeOffset.UtcNow);
+            var map = _dashboard.LastStatusMap(snapshot);
+            _watcher.ApplyStatuses(map, connected: true);
         }
 
         if (InvokeRequired)

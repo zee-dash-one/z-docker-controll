@@ -55,7 +55,7 @@ internal sealed class TrayApp : IDisposable
         _menu.Opening += (_, _) => RebuildMenu();
         _watcher.TransitionDetected += OnTransition;
         _watcher.SnapshotUpdated += OnSnapshot;
-        _watcher.Start();
+        // Statuses vêm do StatsPoller (uma SSH a cada 5 s). Sem loop próprio no watcher.
     }
 
     public void Run() => Application.Run();
@@ -112,7 +112,7 @@ internal sealed class TrayApp : IDisposable
         try
         {
             var sent = await Task.Run(() => WakeOnLan.Send()).ConfigureAwait(true);
-            _mainForm?.Note("Magic packet enviado: " + sent + " bytes para 192.168.0.255:9.");
+            _mainForm?.Note("Magic packet enviado: " + sent + " bytes para " + WakeOnLan.BroadcastAddress + ":9.");
             var up = await PortProbe.WaitUntilOpenAsync(
                 RemoteCommands.Host,
                 RemoteCommands.Port,
@@ -183,11 +183,9 @@ internal sealed class TrayApp : IDisposable
 
             var knownHosts = ReadKnownHosts();
             await Task.Run(() => _session.Start(dialog.UserName, password, knownHosts)).ConfigureAwait(true);
-            _mainForm?.Note("Sessão aberta em " + dialog.UserName + "@192.168.0.112.");
+            _mainForm?.Note("Sessão aberta em " + dialog.UserName + "@" + RemoteCommands.Host + ".");
             _mainForm?.SetSessionState(SessionState.Connected);
             _stats.Start();
-            if (_watcher.LastStatuses.Count == 0)
-                _watcher.Start();
         }
         catch (SshAuthenticationException)
         {

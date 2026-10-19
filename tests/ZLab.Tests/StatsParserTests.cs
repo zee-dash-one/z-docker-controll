@@ -62,10 +62,51 @@ public class StatsParserTests
     }
 
     [Fact]
-    public void Parse_stops_at_section()
+    public void Parse_stops_host_keys_at_section()
     {
         var snap = StatsParser.Parse(Sample + "\nsection=containers\nmem_total_kb=1\n");
         Assert.NotNull(snap.Host);
         Assert.Equal(16211000L * 1024, snap.Host!.MemTotalBytes);
     }
+
+    [Fact]
+    public void Parse_containers_example_lines()
+    {
+        var text = Sample + """
+
+            section=containers
+            c=9router	running	2026-10-16T22:14:03.123456789Z	0	3.21%	85.2MiB / 15.5GiB
+            c=tailscale-mausbot	exited	2026-10-18T10:00:00Z	2	-	-
+            """;
+        var snap = StatsParser.Parse(text);
+        Assert.Equal(2, snap.Containers.Count);
+        var nine = Assert.Single(snap.Containers, c => c.Name == "9router");
+        Assert.Equal("running", nine.State);
+        Assert.NotNull(nine.StartedAt);
+        Assert.Equal(0, nine.Restarts);
+        Assert.Equal(3.21, nine.CpuPercentOfHost);
+        Assert.NotNull(nine.MemUsedBytes);
+        Assert.NotNull(nine.MemLimitBytes);
+
+        var ts = Assert.Single(snap.Containers, c => c.Name == "tailscale-mausbot");
+        Assert.Equal("exited", ts.State);
+        Assert.Null(ts.CpuPercentOfHost);
+        Assert.Null(ts.MemUsedBytes);
+        Assert.Equal(2, ts.Restarts);
+    }
+
+    [Fact]
+    public void Parse_started_at_truncates_nine_fraction_digits()
+    {
+        var dto = StatsParser.ParseStartedAt("2026-10-16T22:14:03.123456789Z");
+        Assert.NotNull(dto);
+        Assert.Equal(2026, dto!.Value.Year);
+    }
+
+    [Fact]
+    public void Parse_started_at_zero_is_null()
+    {
+        Assert.Null(StatsParser.ParseStartedAt("0001-01-01T00:00:00Z"));
+    }
 }
+

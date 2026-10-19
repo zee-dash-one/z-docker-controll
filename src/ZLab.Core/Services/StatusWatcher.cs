@@ -92,6 +92,57 @@ public sealed class StatusWatcher : IDisposable
 
     public void Dispose() => Stop();
 
+    /// <summary>
+    /// Feeds statuses from <see cref="StatsPoller"/> so the tray/balloons stay in sync
+    /// without a second SSH poll (todo 04).
+    /// </summary>
+    public void ApplyStatuses(IReadOnlyDictionary<string, ContainerStatusKind> statuses, bool connected)
+    {
+        foreach (var service in RemoteCommands.Services)
+        {
+            var next = statuses.TryGetValue(service.Id, out var st)
+                ? st
+                : ContainerStatusKind.Unknown;
+
+            ContainerStatusKind? previous;
+            lock (_gate)
+                _baseline.TryGetValue(service.Id, out previous);
+
+            var kind = StatusTransitionDetector.ShouldNotify(previous, next, managed: true, enabled: true);
+
+            lock (_gate)
+                _baseline[service.Id] = next;
+
+            if (kind != TransitionNotifyKind.None)
+            {
+                TransitionDetected?.Invoke(this, new StatusNotifyEventArgs
+                {
+                    ServiceId = service.Id,
+                    DisplayName = service.DisplayName,
+                    Kind = kind,
+                    Status = next
+                });
+            }
+        }
+
+        lock (_gate)
+        {
+            _lastStatuses.Clear();
+            foreach (var service in RemoteCommands.Services)
+            {
+                _lastStatuses[service.Id] = statuses.TryGetValue(service.Id, out var st)
+                    ? st
+                    : ContainerStatusKind.Unknown;
+            }
+        }
+
+        SnapshotUpdated?.Invoke(this, new StatusSnapshotEventArgs
+        {
+            Statuses = LastStatuses,
+            Connected = connected
+        });
+    }
+
     private async Task RunLoopAsync(CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)

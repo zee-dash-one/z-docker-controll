@@ -31,7 +31,7 @@ dotnet publish src/ZLab/ZLab.csproj -c Release -r win-x64 --self-contained false
 
 Tokens e controles em `src/ZLab/Ui/`. Mockups: `docs/mockups/`. Capturas: `docs/screenshots/`.
 
-Redesign (tarefas 01–06) concluído. Tailscale no WSL para o Windows: pasta `wsl/tailscale-windows/` (tarefa 07 — subir depois da limpeza do Docker no WSL e com `TS_AUTHKEY` no `.env`).
+Redesign (tarefas 01–07) concluído. Tailscale no WSL: `wsl/tailscale-windows/` (SOCKS5 em `127.0.0.1:1055`, tag `winwsl`).
 
 ![Sem sessão (escuro)](docs/screenshots/sem-sessao-escuro.png)
 

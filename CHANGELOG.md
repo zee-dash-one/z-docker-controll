@@ -2,11 +2,11 @@
 
 ## 2026-10-19
 
-### todo 07: Tailscale WSL → SOCKS5 (compose pronto; limpeza WSL pendente)
+### todo 07: Tailscale WSL → SOCKS5 em 127.0.0.1:1055
 
-- Projeto `wsl/tailscale-windows/`: userspace, hostname `nbpitang-wsl`, publish `127.0.0.1:1055:1055`, volume `nbpitang-wsl-tailscale-state`.
-- `.env.example` com `TS_AUTHKEY=` vazia; `.env` no `.gitignore`.
-- **Bloqueada** enquanto o Docker do WSL ainda tiver `mausbot` / `9router` / `omniroute` — rode `scripts/wipe-wsl-docker.ps1` (digite `APAGAR`) e cole a auth key antes do `compose up`.
+- `wsl/tailscale-windows/`: userspace, `tag:winwsl`, MagicDNS (`TS_ACCEPT_DNS` + `dns: 100.100.100.100`), publish só `127.0.0.1:1055`.
+- Wipe WSL: correção CRLF em `wipe-wsl-docker-inner.sh` / normalização no `.ps1`.
+- Prova: `curl.exe --socks5-hostname 127.0.0.1:1055` → zlab/9router-serve/mausbot-serve.
 
 ### todo 06: Saída recolhível e polimento
 

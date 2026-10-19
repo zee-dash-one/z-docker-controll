@@ -20,7 +20,9 @@ if (-not (Test-Path $inner)) {
     exit 1
 }
 
-Get-Content -Raw -Path $inner | wsl -d Ubuntu-24.04 -- bash -s
+# Bash no WSL quebra se o .sh tiver CRLF (erro "set: -\r" / "flag: '\r'").
+$scriptText = [System.IO.File]::ReadAllText($inner) -replace "`r`n", "`n" -replace "`r", "`n"
+$scriptText | wsl -d Ubuntu-24.04 -- bash -s
 if ($LASTEXITCODE -ne 0) {
     Write-Host "A limpeza dentro do WSL falhou (codigo $LASTEXITCODE)."
     exit $LASTEXITCODE

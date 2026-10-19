@@ -5,7 +5,10 @@ Um único container (`nbpitang-wsl`) em `Ubuntu-24.04` para o NBPITANG-491 alcan
 ## Pré-requisitos
 
 1. Docker no WSL limpo de 9Router / OmniRoute / MausBot (script `scripts/wipe-wsl-docker.ps1`, palavra `APAGAR`).
-2. Auth key em `.env` (copie de `.env.example`). O agente não gera nem cola a chave.
+2. Auth key em `.env` (copie de `.env.example`). Gere em Settings → Keys com tag **`tag:winwsl`**, reusable, não ephemeral. O agente não gera nem cola a chave.
+3. Na ACL, um device com tag **não** entra em `autogroup:member`. Inclua um grant, por exemplo:
+   `{"src": ["tag:winwsl"], "dst": ["tag:zlab", "tag:ninerouter", "tag:mausbot"], "ip": ["*"]}`
+   (ou `dst: ["*"]` se preferir).
 
 ## Subir
 

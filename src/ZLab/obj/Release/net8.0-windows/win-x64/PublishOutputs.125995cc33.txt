@@ -1,9 +1,0 @@
-/tmp/zlab-publish/ZLab.exe
-/tmp/zlab-publish/Assets/z-lab.ico
-/tmp/zlab-publish/config/services.default.json
-/tmp/zlab-publish/ZLab.dll
-/tmp/zlab-publish/ZLab.deps.json
-/tmp/zlab-publish/ZLab.runtimeconfig.json
-/tmp/zlab-publish/ZLab.pdb
-/tmp/zlab-publish/ZLab.Core.dll
-/tmp/zlab-publish/ZLab.Core.pdb

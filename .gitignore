@@ -1,6 +1,8 @@
 .zteam/config.json
 
-# Saída do dotnet publish (ZLab.exe e dependências). Não versionar.
+# Saída do compilador e do publish. O build recria. Não versionar.
+[Bb]in/
+[Oo]bj/
 publish/
 
 # Segredos locais (Tailscale WSL SOCKS5 e similares)

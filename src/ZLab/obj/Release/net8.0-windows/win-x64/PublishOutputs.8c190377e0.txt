@@ -1,9 +1,0 @@
-C:\GIT\ZAPFCOORP\router-ctrl\publish\ZLab\ZLab.exe
-C:\GIT\ZAPFCOORP\router-ctrl\publish\ZLab\Assets\z-lab.ico
-C:\GIT\ZAPFCOORP\router-ctrl\publish\ZLab\config\services.default.json
-C:\GIT\ZAPFCOORP\router-ctrl\publish\ZLab\ZLab.dll
-C:\GIT\ZAPFCOORP\router-ctrl\publish\ZLab\ZLab.deps.json
-C:\GIT\ZAPFCOORP\router-ctrl\publish\ZLab\ZLab.runtimeconfig.json
-C:\GIT\ZAPFCOORP\router-ctrl\publish\ZLab\ZLab.pdb
-C:\GIT\ZAPFCOORP\router-ctrl\publish\ZLab\ZLab.Core.dll
-C:\GIT\ZAPFCOORP\router-ctrl\publish\ZLab\ZLab.Core.pdb

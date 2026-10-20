@@ -246,43 +246,78 @@ internal sealed class MainForm : Form
         _dashboard.UsageRequested += async (_, s) =>
             await ShowOutputAsync(s.DisplayName + " uso", () => _monitor.StatsAsync(s.Id, CancellationToken.None));
         _dashboard.AccessCodeRequested += async (_, card) => await ShowAccessCodeAsync(card);
+        _dashboard.AccessCodeCopyRequested += async (_, card) => await CopyAccessCodeAsync(card);
         _dashboard.CardMessage += (_, msg) => Note(msg);
     }
 
     private async Task ShowAccessCodeAsync(ServiceCard card)
     {
-        if (_busy || _sessionState != SessionState.Connected)
+        var result = await FetchAccessCodeAsync(card.AccessCodeButton, "Buscando…").ConfigureAwait(true);
+        if (result is null || IsDisposed)
             return;
 
-        var button = card.AccessCodeButton;
-        var previous = button.Text;
-        button.Enabled = false;
-        button.Text = "Buscando…";
+        _accessPopover?.ClearCode();
+        _accessPopover?.Dispose();
+        _accessPopover = new AccessCodePopover();
+        _accessPopover.FormClosed += (_, _) =>
+        {
+            _accessPopover?.ClearCode();
+            _accessPopover = null;
+        };
+        _accessPopover.ShowResult(result, card.AccessCodeButton, this);
+        Note("Código de acesso do MausBot exibido.");
+    }
+
+    private async Task CopyAccessCodeAsync(ServiceCard card)
+    {
+        var result = await FetchAccessCodeAsync(card.AccessCodeCopyButton, null).ConfigureAwait(true);
+        if (result is null || IsDisposed)
+            return;
+
+        if (!result.Found || string.IsNullOrEmpty(result.Code))
+        {
+            Note(result.Problem ?? MausBotAccessCode.NotFoundProblem);
+            return;
+        }
+
         try
         {
-            var result = await _accessCode.FetchAsync(CancellationToken.None).ConfigureAwait(true);
-            if (IsDisposed)
-                return;
+            Clipboard.SetText(result.Code);
+            card.NotifyAccessCodeCopied();
+            Note("Código de acesso copiado.");
+        }
+        catch (Exception)
+        {
+            Note("Não foi possível copiar o código de acesso.");
+        }
+    }
 
-            _accessPopover?.ClearCode();
-            _accessPopover?.Dispose();
-            _accessPopover = new AccessCodePopover();
-            _accessPopover.FormClosed += (_, _) =>
-            {
-                _accessPopover?.ClearCode();
-                _accessPopover = null;
-            };
-            _accessPopover.ShowResult(result, button, this);
-            Note("Código de acesso do MausBot exibido.");
+    private async Task<AccessCodeResult?> FetchAccessCodeAsync(ZButton button, string? busyText)
+    {
+        if (_busy || _sessionState != SessionState.Connected)
+            return null;
+
+        var previous = button.Text;
+        button.Enabled = false;
+        if (busyText is not null)
+            button.Text = busyText;
+        try
+        {
+            return await _accessCode.FetchAsync(CancellationToken.None).ConfigureAwait(true);
         }
         catch (Exception)
         {
             Note("Não foi possível buscar o código de acesso.");
+            return null;
         }
         finally
         {
-            button.Text = previous;
-            button.Enabled = true;
+            if (!button.IsDisposed)
+            {
+                button.Text = previous;
+                button.Enabled = true;
+            }
+
             _stats.RequestImmediate();
         }
     }

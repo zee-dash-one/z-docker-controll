@@ -69,6 +69,7 @@ public sealed class DashboardPanel : Panel
     public event EventHandler<RemoteService>? StopRequested;
     public event EventHandler<RemoteService>? LogsRequested;
     public event EventHandler<ServiceCard>? AccessCodeRequested;
+    public event EventHandler<ServiceCard>? AccessCodeCopyRequested;
     public event EventHandler<RemoteService>? CreateRequested;
     public event EventHandler<RemoteService>? UpdateRequested;
     public event EventHandler<RemoteService>? UsageRequested;
@@ -221,6 +222,7 @@ public sealed class DashboardPanel : Panel
                 LogsRequested?.Invoke(this, card.Service);
         };
         card.AccessCodeClicked += (_, _) => AccessCodeRequested?.Invoke(this, card);
+        card.AccessCodeCopyClicked += (_, _) => AccessCodeCopyRequested?.Invoke(this, card);
         card.CreateClicked += (_, _) =>
         {
             if (card.Service is not null)

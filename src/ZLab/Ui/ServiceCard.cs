@@ -19,6 +19,14 @@ public sealed class ServiceCard : RoundedPanel
         AccentForeground = true,
         Visible = false
     };
+    private readonly ZButton _copyAccess = new()
+    {
+        IconOnly = true,
+        Glyph = Glyphs.Copy,
+        Variant = ZButtonVariant.Ghost,
+        Visible = false
+    };
+    private readonly System.Windows.Forms.Timer _copiedReset = new() { Interval = 2_000 };
     private readonly ZButton _open = new() { IconOnly = true, Glyph = Glyphs.OpenInNewWindow, Variant = ZButtonVariant.Ghost };
     private readonly ZButton _more = new() { IconOnly = true, Glyph = Glyphs.More, Variant = ZButtonVariant.Ghost };
     private readonly ContextMenuStrip _menu;
@@ -51,6 +59,7 @@ public sealed class ServiceCard : RoundedPanel
         Controls.Add(_playStop);
         Controls.Add(_logs);
         Controls.Add(_accessCode);
+        Controls.Add(_copyAccess);
         Controls.Add(_open);
         Controls.Add(_more);
 
@@ -58,6 +67,12 @@ public sealed class ServiceCard : RoundedPanel
         _tips.SetToolTip(_open, "Abrir");
         _tips.SetToolTip(_more, "Mais ações");
         _tips.SetToolTip(_accessCode, "Código de primeiro acesso do MausBot");
+        _tips.SetToolTip(_copyAccess, "Copiar código");
+        _copiedReset.Tick += (_, _) =>
+        {
+            _copiedReset.Stop();
+            _tips.SetToolTip(_copyAccess, "Copiar código");
+        };
 
         _playStop.Click += (_, _) =>
         {
@@ -68,6 +83,7 @@ public sealed class ServiceCard : RoundedPanel
         };
         _logs.Click += (_, _) => LogsClicked?.Invoke(this, EventArgs.Empty);
         _accessCode.Click += (_, _) => AccessCodeClicked?.Invoke(this, EventArgs.Empty);
+        _copyAccess.Click += (_, _) => AccessCodeCopyClicked?.Invoke(this, EventArgs.Empty);
         _open.Click += (_, _) =>
         {
             if (_view.OpenUrl is string url)
@@ -100,6 +116,7 @@ public sealed class ServiceCard : RoundedPanel
     public event EventHandler? StopClicked;
     public event EventHandler? LogsClicked;
     public event EventHandler? AccessCodeClicked;
+    public event EventHandler? AccessCodeCopyClicked;
     public event EventHandler? CreateClicked;
     public event EventHandler? UpdateClicked;
     public event EventHandler? UsageClicked;
@@ -107,11 +124,22 @@ public sealed class ServiceCard : RoundedPanel
 
     public ZButton AccessCodeButton => _accessCode;
 
+    public ZButton AccessCodeCopyButton => _copyAccess;
+
+    public void NotifyAccessCodeCopied()
+    {
+        _tips.SetToolTip(_copyAccess, "Copiado");
+        _copiedReset.Stop();
+        _copiedReset.Start();
+    }
+
     public void Bind(RemoteService service)
     {
         _service = service;
         _glyph = GlyphFor(service);
-        _accessCode.Visible = string.Equals(service.Id, "mausbot", StringComparison.Ordinal);
+        var isMausBot = string.Equals(service.Id, "mausbot", StringComparison.Ordinal);
+        _accessCode.Visible = isMausBot;
+        _copyAccess.Visible = isMausBot;
         ApplyView(ServiceCardPresenter.From(service, null, 4, DateTimeOffset.UtcNow, false));
     }
 
@@ -127,6 +155,8 @@ public sealed class ServiceCard : RoundedPanel
             ThemeManager.ThemeChanged -= OnTheme;
             _tips.Dispose();
             _menu.Dispose();
+            _copiedReset.Stop();
+            _copiedReset.Dispose();
         }
 
         base.Dispose(disposing);
@@ -215,6 +245,7 @@ public sealed class ServiceCard : RoundedPanel
             _accessCode.Location = new Point(
                 _logs.Right + LogicalToDeviceUnits(4),
                 actionY + (LogicalToDeviceUnits(32) - _accessCode.Height) / 2);
+            _copyAccess.Location = new Point(_accessCode.Right + LogicalToDeviceUnits(4), actionY);
         }
 
         _more.Location = new Point(Width - padX - _more.Width, actionY);
@@ -254,11 +285,13 @@ public sealed class ServiceCard : RoundedPanel
         {
             var running = view.CanStop;
             _accessCode.Enabled = running;
-            _tips.SetToolTip(
-                _accessCode,
-                running
-                    ? "Código de primeiro acesso do MausBot"
-                    : "Suba o MausBot para gerar o código de acesso.");
+            _copyAccess.Enabled = running;
+            var tip = running
+                ? "Código de primeiro acesso do MausBot"
+                : "Suba o MausBot para gerar o código de acesso.";
+            _tips.SetToolTip(_accessCode, tip);
+            if (!_copiedReset.Enabled)
+                _tips.SetToolTip(_copyAccess, running ? "Copiar código" : tip);
         }
 
         _cpuBar.Value = view.CpuPercent ?? 0;

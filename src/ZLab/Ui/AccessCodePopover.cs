@@ -29,13 +29,13 @@ public sealed class AccessCodePopover : Form
 
     public AccessCodePopover()
     {
+        AutoScaleMode = AutoScaleMode.None;
         FormBorderStyle = FormBorderStyle.None;
         ShowInTaskbar = false;
         StartPosition = FormStartPosition.Manual;
         TopMost = true;
         KeyPreview = true;
         Width = LogicalToDeviceUnits(340);
-        Padding = new Padding(LogicalToDeviceUnits(16));
         DoubleBuffered = true;
 
         _title.AutoSize = true;
@@ -52,6 +52,7 @@ public sealed class AccessCodePopover : Form
         _codeBox.Controls.Add(_codeLabel);
         _codeBox.Controls.Add(_copy);
         _codeLabel.AutoSize = false;
+        _codeLabel.AutoEllipsis = true;
         _codeLabel.Font = Tokens.Code();
         _codeLabel.TextAlign = ContentAlignment.MiddleLeft;
 
@@ -67,6 +68,11 @@ public sealed class AccessCodePopover : Form
         {
             _copiedReset.Stop();
             _copy.Text = "Copiar";
+            if (Visible)
+            {
+                LayoutChildren();
+                ApplyClip();
+            }
         };
 
         ThemeManager.ThemeChanged += OnTheme;
@@ -106,6 +112,9 @@ public sealed class AccessCodePopover : Form
         LayoutChildren();
         PositionNear(anchor, owner);
         Show(owner);
+        LayoutChildren();
+        PositionNear(anchor, owner);
+        ApplyClip();
         Native.TrySetRoundCorners(Handle);
         Native.TrySetImmersiveDarkMode(Handle, ThemeManager.Current == Palette.Dark);
         Activate();
@@ -188,6 +197,8 @@ public sealed class AccessCodePopover : Form
         {
             Clipboard.SetText(_code);
             _copy.Text = "Copiado";
+            LayoutChildren();
+            ApplyClip();
             _copiedReset.Stop();
             _copiedReset.Start();
         }
@@ -240,39 +251,73 @@ public sealed class AccessCodePopover : Form
 
     private void LayoutChildren()
     {
+        SuspendLayout();
         var pad = LogicalToDeviceUnits(16);
+        var gap = LogicalToDeviceUnits(8);
+        var innerW = Math.Max(LogicalToDeviceUnits(280), Width - pad * 2);
         var y = pad;
-        var innerW = Width - pad * 2;
 
+        _title.MaximumSize = new Size(innerW, 0);
         _title.Location = new Point(pad, y);
-        y += _title.PreferredHeight + LogicalToDeviceUnits(6);
+        y += Math.Max(_title.Height, _title.PreferredHeight) + gap;
 
-        _hint.SetBounds(pad, y, innerW, LogicalToDeviceUnits(32));
-        y += _hint.Height + LogicalToDeviceUnits(12);
+        var hintH = MeasureWrapped(_hint.Text, _hint.Font, innerW);
+        _hint.SetBounds(pad, y, innerW, hintH);
+        y += hintH + LogicalToDeviceUnits(12);
 
         if (_codeBox.Visible)
         {
-            var boxH = LogicalToDeviceUnits(44);
+            var copyW = Math.Max(_copy.Width, LogicalToDeviceUnits(96));
+            var copyH = Math.Max(_copy.Height, LogicalToDeviceUnits(28));
+            var boxH = Math.Max(LogicalToDeviceUnits(44), copyH + LogicalToDeviceUnits(12));
             _codeBox.SetBounds(pad, y, innerW, boxH);
-            _copy.Location = new Point(_codeBox.Width - _copy.Width - LogicalToDeviceUnits(8),
-                (_codeBox.Height - _copy.Height) / 2);
+            _copy.SetBounds(
+                innerW - copyW - gap,
+                Math.Max(0, (boxH - copyH) / 2),
+                copyW,
+                copyH);
             _codeLabel.SetBounds(
                 LogicalToDeviceUnits(12),
                 0,
-                Math.Max(40, _copy.Left - LogicalToDeviceUnits(16)),
+                Math.Max(LogicalToDeviceUnits(80), _copy.Left - LogicalToDeviceUnits(16)),
                 boxH);
             y += boxH + LogicalToDeviceUnits(12);
         }
         else if (_problem.Visible)
         {
-            _problem.SetBounds(pad, y, innerW, LogicalToDeviceUnits(48));
-            y += _problem.Height + LogicalToDeviceUnits(12);
+            var problemH = MeasureWrapped(_problem.Text, _problem.Font, innerW);
+            _problem.SetBounds(pad, y, innerW, problemH);
+            y += problemH + LogicalToDeviceUnits(12);
         }
 
-        _footer.SetBounds(pad, y, innerW, LogicalToDeviceUnits(28));
-        y += _footer.Height + pad;
+        var footerH = MeasureWrapped(_footer.Text, _footer.Font, innerW);
+        _footer.SetBounds(pad, y, innerW, footerH);
+        y += footerH + pad;
         Height = y;
-        Invalidate();
+        ResumeLayout(true);
+        Invalidate(true);
+    }
+
+    private void ApplyClip()
+    {
+        var radius = LogicalToDeviceUnits(12);
+        using var path = Tokens.RoundedRect(new Rectangle(0, 0, Width, Height), radius);
+        var next = new Region(path);
+        var previous = Region;
+        Region = next;
+        previous?.Dispose();
+    }
+
+    private static int MeasureWrapped(string text, Font font, int width)
+    {
+        if (string.IsNullOrEmpty(text))
+            return font.Height;
+        var size = TextRenderer.MeasureText(
+            text,
+            font,
+            new Size(Math.Max(1, width), int.MaxValue),
+            TextFormatFlags.WordBreak | TextFormatFlags.TextBoxControl);
+        return Math.Max(font.Height, size.Height);
     }
 
     private void OnTheme(object? sender, EventArgs e)

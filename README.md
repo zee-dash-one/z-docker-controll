@@ -56,13 +56,77 @@ Não edita o Compose, não apaga volume e não mexe em outro projeto Docker do s
 
 ## Build (WSL)
 
+`dotnet build` no PowerShell deste PC falha com `No .NET SDKs were found`. O Windows não tem o SDK. O build roda no WSL `Ubuntu-24.04`, usuário `hill`.
+
+### 1. Instalar o SDK 8 no WSL (uma vez)
+
+Dentro do WSL, como `hill`:
+
 ```bash
-export PATH="/home/hill/.dotnet:$PATH"
-export DOTNET_ROOT="/home/hill/.dotnet"
-cd /mnt/c/GIT/ZAPFCOORP/router-ctrl
-dotnet test ZLab.sln -c Release
-dotnet publish src/ZLab/ZLab.csproj -c Release -r win-x64 --self-contained false -o publish/ZLab
+curl -sSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
+bash /tmp/dotnet-install.sh --channel 8.0
 ```
+
+Isso instala em `/home/hill/.dotnet` (não pede root). No fim do `~/.bashrc`:
+
+```bash
+export DOTNET_ROOT=$HOME/.dotnet
+export PATH=$HOME/.dotnet:$PATH
+```
+
+Conferir: `/home/hill/.dotnet/dotnet --version` deve mostrar `8.0.x`. Nesta máquina está o `8.0.425`.
+
+O `bash -lc` do PowerShell não lê o `.bashrc`. O comando abaixo usa o `dotnet` pelo caminho completo para não cair no `dotnet` do Windows, que está no PATH e não tem SDK.
+
+### 2. Compilar
+
+No PowerShell:
+
+```powershell
+wsl -d Ubuntu-24.04 -u hill --cd /mnt/c/GIT/ZAPFCOORP/router-ctrl env DOTNET_ROOT=/home/hill/.dotnet DOTNET_MULTILEVEL_LOOKUP=0 /home/hill/.dotnet/dotnet build src/ZLab/ZLab.csproj -c Release
+```
+
+Build conferido em 19/10/2026 22:57: `Build succeeded`, 0 avisos. Arquivo gerado:
+
+`C:\GIT\ZAPFCOORP\router-ctrl\src\ZLab\bin\Release\net8.0-windows\ZLab.dll`
+
+Ao lado dele existe um arquivo chamado `ZLab`. Esse arquivo é um programa Linux. Não é o Z-Lab do Windows.
+
+### 3. Abrir no Windows
+
+Com o .NET 8 Desktop Runtime instalado no Windows:
+
+```powershell
+dotnet C:\GIT\ZAPFCOORP\router-ctrl\src\ZLab\bin\Release\net8.0-windows\ZLab.dll
+```
+
+### Testes
+
+```powershell
+wsl -d Ubuntu-24.04 -u hill --cd /mnt/c/GIT/ZAPFCOORP/router-ctrl env DOTNET_ROOT=/home/hill/.dotnet DOTNET_MULTILEVEL_LOOKUP=0 /home/hill/.dotnet/dotnet test ZLab.sln -c Release
+```
+
+### 4. Publicar o exe
+
+`dotnet build` não grava em `publish\ZLab`. Essa pasta só muda com `dotnet publish`. Sem este passo o `ZLab.exe` continua com a data antiga.
+
+No PowerShell:
+
+```powershell
+wsl -d Ubuntu-24.04 -u hill --cd /mnt/c/GIT/ZAPFCOORP/router-ctrl env DOTNET_ROOT=/home/hill/.dotnet DOTNET_MULTILEVEL_LOOKUP=0 /home/hill/.dotnet/dotnet publish src/ZLab/ZLab.csproj -c Release -r win-x64 --self-contained false -o publish/ZLab
+```
+
+Publicação conferida em 19/10/2026 23:00. O programa de dois cliques é:
+
+`C:\GIT\ZAPFCOORP\router-ctrl\publish\ZLab\ZLab.exe`
+
+Para abrir:
+
+```powershell
+C:\GIT\ZAPFCOORP\router-ctrl\publish\ZLab\ZLab.exe
+```
+
+Precisa do .NET 8 Desktop Runtime no Windows (`--self-contained false`).
 
 ## Interface
 
@@ -82,11 +146,17 @@ Atalhos: `Ctrl+L` mostra/esconde a Saída; `F5` atualiza as métricas (com sess�
 
 ## Run (Windows)
 
+O executável atualizado fica na publicação, não na pasta do `dotnet build`:
+
 ```powershell
-.\publish\ZLab\ZLab.exe
+C:\GIT\ZAPFCOORP\router-ctrl\publish\ZLab\ZLab.exe
 ```
 
-Requer .NET 8 Desktop Runtime. O exe fala com `192.168.2.37:22`. Não usa `wsl docker`.
+Requer .NET 8 Desktop Runtime. O programa fala com `192.168.2.37:22`. Não usa `wsl docker`. Sem o `dotnet publish` da seção Build, esse exe não é o build novo. A DLL do `dotnet build` abre assim, e também não é aquele exe:
+
+```powershell
+dotnet C:\GIT\ZAPFCOORP\router-ctrl\src\ZLab\bin\Release\net8.0-windows\ZLab.dll
+```
 
 A limpeza do Docker no WSL (containers e volumes nomeados, portproxy, hosts) é `scripts/wipe-wsl-docker.ps1`. Ela pede a palavra `APAGAR` e não faz parte da subida do exe.
 

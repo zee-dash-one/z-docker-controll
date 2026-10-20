@@ -1,5 +1,8 @@
 .zteam/config.json
 
+# Saída do dotnet publish (ZLab.exe e dependências). Não versionar.
+publish/
+
 # Segredos locais (Tailscale WSL SOCKS5 e similares)
 wsl/tailscale-windows/.env
 **/.env

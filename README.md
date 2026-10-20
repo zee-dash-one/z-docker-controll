@@ -10,6 +10,39 @@ Este repositório e o [z-server-01](https://github.com/zee-dash-one/z-server-01)
 
 O sudoers estreito está em `z-server-01/zlab/sudoers-zlab-monitor` e ainda precisa ser aplicado à mão (`zlab/aplicar-sudoers.sh`).
 
+## O que o Z-Lab faz no z-server-01
+
+A sessão é SSH para `melchior@192.168.2.37:22`. Os comandos saem como `sudo -n` e só os da lista fechada em `RemoteCommands`. O Compose é `/opt/zlab/docker-compose.yml`. O exe não fala com o Docker do WSL.
+
+O pacote mágico de ligar a máquina não usa SSH. Sai em UDP para `192.168.2.255:9`, MAC `FC:AA:14:F9:80:D4`.
+
+### Observa
+
+| Leitura | Comando |
+| --- | --- |
+| CPU / carga | `uptime`, `/proc/loadavg` |
+| Memória | `free -h` |
+| Disco do sistema | `df -h /` (`ubuntu-lv`) |
+| Disco do Docker | `df -h /var/lib/docker` (`docker-lv`) |
+| Disco de dados | `df -h /data` (ainda sem montagem: o painel mostra "Não instalado") |
+| Estado do serviço | `docker compose ps -a` |
+| Uso do container | `docker stats --no-stream` (CPU, memória, PIDs) |
+| Saída | `docker compose logs --tail 80` |
+
+Os seis nomes são `9router`, `omniroute`, `mausbot`, `tailscale`, `tailscale-9router` e `tailscale-mausbot`. Os três Tailscale usam `docker compose --profile tailnet`.
+
+### Muda
+
+| Ação | Efeito no servidor |
+| --- | --- |
+| Iniciar / Parar | `docker compose start` ou `stop` daquele serviço |
+| Atualizar | `pull` e `up -d`. O volume fica. |
+| Código de acesso do MausBot | `docker exec mausbot … pair --label Z-Lab`. O código aparece na tela e não é gravado. |
+| Desligar | `shutdown -h now`. O SSH cai e os containers param com o sistema. |
+| Reiniciar | `reboot`. No boot o Docker sobe e os containers voltam por `restart: unless-stopped`. |
+
+Não edita o Compose, não apaga volume e não mexe em outro projeto Docker do servidor. O túnel `scripts/start-tunnel.sh` e o container Tailscale do WSL são do navegador neste PC, não do monitor.
+
 ## Docs
 
 - Produto: [docs/SPEC-ZLAB.md](docs/SPEC-ZLAB.md) (2.0)

@@ -21,11 +21,14 @@ services:
       # Escuta em todas as interfaces *dentro* do container; o publish abaixo
       # restringe o host a 127.0.0.1 (nada em 0.0.0.0 no Windows).
       TS_SOCKS5_SERVER: "0.0.0.0:1055"
+      # HTTP para o Opera. O leitor de PAC do Windows ignora SOCKS e cairia em DIRECT.
+      TS_OUTBOUND_HTTP_PROXY_LISTEN: "0.0.0.0:1056"
       TS_AUTH_ONCE: "true"
     volumes:
       - nbpitang-wsl-tailscale-state:/var/lib/tailscale
     ports:
       - "127.0.0.1:1055:1055"
+      - "127.0.0.1:1056:1056"
     # SOCKS usa o resolv do container; sem isto o Docker (127.0.0.11) engole *.ts.net.
     dns:
       - 100.100.100.100

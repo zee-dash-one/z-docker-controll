@@ -70,3 +70,50 @@ O NetExtender em túnel dividido e o WinINET ficam intocados. Não instale o app
 ## Rede
 
 A sessão e o Liga usam IPv4 (`192.168.2.37`, broadcast `192.168.2.255`). O pull de imagem acontece no servidor. O script `scripts/fix-wsl-docker-ipv4.sh` continua no repositório para o Docker do WSL, e não é o caminho do botão Atualizar.
+
+O Z-Lab observa os containers por SSH na LAN. Ele não passa pelo Tailscale do WSL. O navegador chega nos painéis por `localhost` (túnel SSH) ou direto na LAN nas portas 20128 e 20129. Os nomes `*.mandrill-court.ts.net` saem pelo proxy do container `nbpitang-wsl-1`; no Chrome, no Brave e no Opera essa ligação expira. O `hosts` só troca o nome por `127.0.0.1` (`9router-wsl:20128`, `mausbot-wsl:8799`). A porta continua na URL.
+
+```mermaid
+flowchart LR
+  subgraph pc [Windows NBPITANG-491]
+    ZLab[Z-Lab]
+    Browser[Navegador]
+  end
+
+  subgraph wsl [WSL Ubuntu-24.04]
+    Tunnel["ssh -L 20128, 20129, 8799"]
+    TS["nbpitang-wsl-1<br/>SOCKS 127.0.0.1:1055<br/>HTTP 127.0.0.1:1056"]
+  end
+
+  subgraph srv [z-server-01 192.168.2.37 /opt/zlab]
+    SSH[sshd :22]
+    R9[9router :20128]
+    OM[omniroute :20129]
+    MB["mausbot 127.0.0.1:8799"]
+    T9[9router-serve :443]
+    TZ[zlab :443]
+    TM[mausbot-serve :443]
+  end
+
+  ZLab -->|"SSH: docker ps / stats"| SSH
+  SSH --> R9
+  SSH --> OM
+  SSH --> MB
+
+  Browser -->|"http://192.168.2.37:20128"| R9
+  Browser -->|"http://192.168.2.37:20129"| OM
+  Browser -->|"127.0.0.1 ou 9router-wsl:20128<br/>mausbot-wsl:8799"| Tunnel
+  Tunnel --> R9
+  Tunnel --> OM
+  Tunnel --> MB
+
+  Browser -.->|"*.mandrill-court.ts.net<br/>navegador expira"| TS
+  TS --> T9
+  TS --> TZ
+  TS --> TM
+  T9 --> R9
+  TZ --> OM
+  TM --> MB
+```
+
+O túnel sobe com `scripts/start-tunnel.sh`. O `scripts/setup-portproxy.ps1` só cria `portproxy` se o Windows deixar de enxergar o `localhost` do WSL.

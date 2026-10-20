@@ -1,6 +1,6 @@
 # Tailscale no WSL → SOCKS5 no Windows
 
-Um único container (`nbpitang-wsl`) em `Ubuntu-24.04` para o NBPITANG-491 alcançar `*.mandrill-court.ts.net` **sem** o app Tailscale. O NetExtender em túnel dividido continua dono das rotas; o proxy do sistema (WinINET) **não** é alterado.
+Um único container (`nbpitang-wsl-1`) em `Ubuntu-24.04` para o NBPITANG-491 alcançar `*.mandrill-court.ts.net` **sem** o app Tailscale. O NetExtender em túnel dividido continua dono das rotas. O proxy manual do Windows fica desligado; só esses nomes da tailnet passam pelo SOCKS.
 
 ## Pré-requisitos
 
@@ -28,6 +28,18 @@ curl.exe --socks5 127.0.0.1:1055 https://zlab.mandrill-court.ts.net
 ```
 
 Opcional: `9router-serve` ou `mausbot-serve` no mesmo domínio. Use `--socks5-hostname` se o curl local não resolver MagicDNS.
+
+## Opera GX (só a tailnet)
+
+O Opera GX avalia o script pelo Windows, e esse leitor ignora `SOCKS5`. Por isso o script devolve o proxy HTTP `127.0.0.1:1056` (o mesmo container resolve o nome). `ProxyEnable` continua `0`. O resto do tráfego fica `DIRECT`.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\GIT\ZAPFCOORP\router-ctrl\scripts\tailnet-pac.ps1
+```
+
+Feche o Opera GX por completo (ícone perto do relógio, Sair) e abra de novo.
+
+Para desfazer: apague `AutoConfigURL` e a tarefa `ZLab-TailnetPac`.
 
 ## Parar
 

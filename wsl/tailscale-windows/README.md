@@ -10,6 +10,14 @@ Um único container (`nbpitang-wsl-1`) em `Ubuntu-24.04` para o NBPITANG-491 alc
    `{"src": ["tag:winwsl"], "dst": ["tag:zlab", "tag:ninerouter", "tag:mausbot"], "ip": ["*"]}`
    (ou `dst: ["*"]` se preferir).
 
+## Subida automática
+
+O container usa `restart: unless-stopped` e o Docker do Ubuntu já está habilitado no systemd. O que falta no boot é o próprio WSL: ele só acorda quando algum processo chama `wsl.exe`.
+
+A tarefa `ZLab-WslTailscale` faz isso no logon e roda `scripts/start-wsl-tailscale.ps1`. Quando o container está de pé, o Windows alcança `127.0.0.1:1055` (SOCKS) e `127.0.0.1:1056` (HTTP) pelo encaminhamento de localhost do WSL. Não há segundo script de rota nem portproxy.
+
+Programas que falam esses proxies usam a tailnet. O Chrome, o Brave e o Opera não completam o HTTPS por esse caminho. Os painéis do servidor continuam em `http://127.0.0.1:20128`, `:20129` e `:8799` pelo túnel SSH, que é outro processo.
+
 ## Subir
 
 No PowerShell 5, a partir desta pasta (ou com caminho absoluto):

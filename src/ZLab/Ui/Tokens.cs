@@ -37,11 +37,10 @@ public static class Tokens
     private static string? _monoFamily;
     private static string? _iconFamily;
 
-    public static string UiFamily => _uiFamily ??= FirstAvailable(
-        "Segoe UI Variable Text", "Segoe UI");
+    // Segoe UI estática. A variante Variable corta o lado direito dos glifos no TextRenderer (GDI).
+    public static string UiFamily => _uiFamily ??= FirstAvailable("Segoe UI");
 
-    public static string DisplayFamily => _displayFamily ??= FirstAvailable(
-        "Segoe UI Variable Display", "Segoe UI");
+    public static string DisplayFamily => _displayFamily ??= FirstAvailable("Segoe UI");
 
     public static string MonoFamily => _monoFamily ??= FirstAvailable(
         "Cascadia Mono", "Consolas");

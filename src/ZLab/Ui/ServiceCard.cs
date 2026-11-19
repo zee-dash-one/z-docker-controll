@@ -190,8 +190,8 @@ public sealed class ServiceCard : RoundedPanel
 
         var addrColor = _addressHover && !string.IsNullOrEmpty(_view.OpenUrl) ? p.AccentHover : p.Accent;
         TextRenderer.DrawText(g, _view.AddressLabel, capFont,
-            new Rectangle(nameX, padTop + LogicalToDeviceUnits(16), nameW, LogicalToDeviceUnits(14)), addrColor,
-            TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix | TextFormatFlags.EndEllipsis);
+            new Rectangle(nameX, padTop + LogicalToDeviceUnits(16), nameW, LogicalToDeviceUnits(16)), addrColor,
+            TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
 
         var bodyTop = padTop + icon + LogicalToDeviceUnits(12);
         if (_view.Body is ServiceCardBodyKind.StoppedBox or ServiceCardBodyKind.AbsentBox)
@@ -206,9 +206,10 @@ public sealed class ServiceCard : RoundedPanel
         }
         else
         {
-            DrawMonitorRow(g, p, capFont, padX, bodyTop, "Estado", _view.StateLine, null, full: true);
-            DrawMonitorRow(g, p, capFont, padX, bodyTop + LogicalToDeviceUnits(8 + 14), "CPU", _view.CpuText, _cpuBar, full: false);
-            DrawMonitorRow(g, p, capFont, padX, bodyTop + LogicalToDeviceUnits(2 * (8 + 14)), "Memória", _view.MemText, _memBar, full: false);
+            var step = LogicalToDeviceUnits(24);
+            DrawMonitorRow(g, p, capFont, padX, bodyTop, "Estado", _view.StateLine, full: true);
+            DrawMonitorRow(g, p, capFont, padX, bodyTop + step, "CPU", _view.CpuText, full: false);
+            DrawMonitorRow(g, p, capFont, padX, bodyTop + 2 * step, "Memória", _view.MemText, full: false);
         }
 
         var actionY = Height - LogicalToDeviceUnits(10) - LogicalToDeviceUnits(32);
@@ -224,8 +225,9 @@ public sealed class ServiceCard : RoundedPanel
         _pill.Location = new Point(Width - padX - _pill.Width, padTop + LogicalToDeviceUnits(5));
 
         var bodyTop = padTop + LogicalToDeviceUnits(32) + LogicalToDeviceUnits(12);
-        var keyW = LogicalToDeviceUnits(64);
-        var valW = LogicalToDeviceUnits(116);
+        var keyW = LogicalToDeviceUnits(72);
+        using var capFont = Tokens.Caption();
+        var valW = CardText.ValueWidth(capFont, _view.CpuText, _view.MemText, LogicalToDeviceUnits(8));
         var barX = padX + keyW + LogicalToDeviceUnits(4);
         var barW = Math.Max(20, Width - padX - barX - valW - LogicalToDeviceUnits(8));
         var showBars = _view.Body is ServiceCardBodyKind.Monitor or ServiceCardBodyKind.ErrorMonitor or ServiceCardBodyKind.Pending;
@@ -233,8 +235,9 @@ public sealed class ServiceCard : RoundedPanel
         _memBar.Visible = showBars;
         if (showBars)
         {
-            _cpuBar.SetBounds(barX, bodyTop + LogicalToDeviceUnits(8 + 14) + LogicalToDeviceUnits(5), barW, LogicalToDeviceUnits(6));
-            _memBar.SetBounds(barX, bodyTop + LogicalToDeviceUnits(2 * (8 + 14)) + LogicalToDeviceUnits(5), barW, LogicalToDeviceUnits(6));
+            var step = LogicalToDeviceUnits(24);
+            _cpuBar.SetBounds(barX, bodyTop + step + LogicalToDeviceUnits(5), barW, LogicalToDeviceUnits(6));
+            _memBar.SetBounds(barX, bodyTop + 2 * step + LogicalToDeviceUnits(5), barW, LogicalToDeviceUnits(6));
         }
 
         var actionY = Height - LogicalToDeviceUnits(10) - LogicalToDeviceUnits(32);
@@ -313,24 +316,24 @@ public sealed class ServiceCard : RoundedPanel
         int y,
         string key,
         string value,
-        ThinProgressBar? bar,
         bool full)
     {
-        var keyW = LogicalToDeviceUnits(64);
-        var valW = LogicalToDeviceUnits(116);
-        TextRenderer.DrawText(g, key, capFont, new Rectangle(padX, y, keyW, LogicalToDeviceUnits(14)), p.Text3,
-            TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+        var keyW = LogicalToDeviceUnits(72);
+        var rowH = LogicalToDeviceUnits(16);
+        TextRenderer.DrawText(g, key, capFont, new Rectangle(padX, y, keyW, rowH), p.Text3,
+            TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
         if (full)
         {
             var w = Width - padX - keyW - padX;
-            TextRenderer.DrawText(g, value, capFont, new Rectangle(padX + keyW, y, w, LogicalToDeviceUnits(14)), p.Text2,
-                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix | TextFormatFlags.EndEllipsis);
+            TextRenderer.DrawText(g, value, capFont, new Rectangle(padX + keyW, y, w, rowH), p.Text2,
+                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
         }
         else
         {
+            var valW = CardText.ValueWidth(capFont, value, value, LogicalToDeviceUnits(8));
             TextRenderer.DrawText(g, value, capFont,
-                new Rectangle(Width - padX - valW, y, valW, LogicalToDeviceUnits(14)), p.Text2,
-                TextFormatFlags.Right | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+                new Rectangle(Width - padX - valW, y, valW, rowH), p.Text2,
+                CardText.ValueFlags);
         }
     }
 

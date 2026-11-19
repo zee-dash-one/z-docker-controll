@@ -20,6 +20,15 @@ public sealed class DashboardPanel : Panel
         Compact = true,
         Variant = ZButtonVariant.Ghost
     };
+    private readonly ZButton _includeWsl = new()
+    {
+        Text = "Incluir WSL Tailscale",
+        Glyph = Glyphs.Shield,
+        Compact = true,
+        Variant = ZButtonVariant.Secondary,
+        Visible = false
+    };
+    private readonly WslTailscaleCard _wslCard = new();
     private readonly ResponsiveGrid _grid = new()
     {
         MinItemWidth = 360,
@@ -70,6 +79,10 @@ public sealed class DashboardPanel : Panel
     public event EventHandler<RemoteService>? LogsRequested;
     public event EventHandler<ServiceCard>? AccessCodeRequested;
     public event EventHandler<ServiceCard>? AccessCodeCopyRequested;
+    public event EventHandler? WslStartRequested;
+    public event EventHandler? WslStopRequested;
+    public event EventHandler? WslRemoveRequested;
+    public event EventHandler? WslIncludeRequested;
     public event EventHandler<RemoteService>? CreateRequested;
     public event EventHandler<RemoteService>? UpdateRequested;
     public event EventHandler<RemoteService>? UsageRequested;
@@ -99,11 +112,18 @@ public sealed class DashboardPanel : Panel
         _servicesHeader.Subtitle = "6 serviços";
         _updatedLabel.AutoSize = true;
         _updatedLabel.Font = Tokens.Caption();
+        _servicesHeader.Actions.Add(_includeWsl);
         _servicesHeader.Actions.Add(_updatedLabel);
         _servicesHeader.Actions.Add(_refresh);
+        _includeWsl.Click += (_, _) => WslIncludeRequested?.Invoke(this, EventArgs.Empty);
         _servicesHeader.Dock = DockStyle.Top;
         _servicesHeader.Height = LogicalToDeviceUnits(40);
         _refresh.Click += (_, _) => RefreshRequested?.Invoke(this, EventArgs.Empty);
+
+        _wslCard.StartClicked += (_, _) => WslStartRequested?.Invoke(this, EventArgs.Empty);
+        _wslCard.StopClicked += (_, _) => WslStopRequested?.Invoke(this, EventArgs.Empty);
+        _wslCard.RemoveClicked += (_, _) => WslRemoveRequested?.Invoke(this, EventArgs.Empty);
+        _grid.Controls.Add(_wslCard);
 
         foreach (var service in RemoteCommands.Services)
         {
@@ -126,6 +146,16 @@ public sealed class DashboardPanel : Panel
         ApplyTiles(ServerTilesPresenter.Empty(), pushSpark: false);
         SetServicesSummary(0, 0);
         UpdateAgeLabel();
+    }
+
+    public WslTailscaleCard WslCard => _wslCard;
+
+    public void SetWslCardVisible(bool visible)
+    {
+        _wslCard.Visible = visible;
+        _includeWsl.Visible = !visible;
+        _servicesHeader.PerformLayout();
+        _grid.PerformLayout();
     }
 
     public void SetEnergyVisible(bool visible)

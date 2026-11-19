@@ -11,6 +11,9 @@ internal sealed class MainForm : Form
     private readonly StatusWatcher _watcher;
     private readonly StatsPoller _stats;
     private readonly MausBotAccessCode _accessCode;
+    private readonly WslTailscaleController _wsl = new();
+    private readonly System.Windows.Forms.Timer _wslTimer = new();
+    private bool _wslBusy;
     private readonly Func<Task> _wakeAsync;
     private readonly Func<Task> _loginAsync;
     private readonly Action _endSession;
@@ -62,6 +65,7 @@ internal sealed class MainForm : Form
 
         BuildChrome();
         WireEvents();
+        WireWslTailscale();
 
         ThemeManager.ThemeChanged += OnTheme;
         _watcher.SnapshotUpdated += OnSnapshot;
@@ -248,6 +252,172 @@ internal sealed class MainForm : Form
         _dashboard.AccessCodeRequested += async (_, card) => await ShowAccessCodeAsync(card);
         _dashboard.AccessCodeCopyRequested += async (_, card) => await CopyAccessCodeAsync(card);
         _dashboard.CardMessage += (_, msg) => Note(msg);
+    }
+
+    private void WireWslTailscale()
+    {
+        var prefs = _settings.Current;
+        _dashboard.SetWslCardVisible(prefs.WslTailscaleVisible);
+        _dashboard.WslStartRequested += async (_, _) => await StartWslAsync(askKey: true);
+        _dashboard.WslStopRequested += async (_, _) => await StopWslAsync();
+        _dashboard.WslRemoveRequested += async (_, _) => await RemoveWslAsync();
+        _dashboard.WslIncludeRequested += (_, _) => IncludeWsl();
+
+        _wslTimer.Interval = Math.Max(2, prefs.PollSeconds) * 1000;
+        _wslTimer.Tick += async (_, _) => await RefreshWslAsync();
+        _wslTimer.Start();
+
+        if (prefs.WslTailscaleVisible && prefs.WslTailscaleConfigured)
+            _ = StartWslAsync(askKey: false);
+        else if (prefs.WslTailscaleVisible)
+            _ = RefreshWslAsync();
+    }
+
+    private async Task StartWslAsync(bool askKey)
+    {
+        if (_wslBusy || IsDisposed)
+            return;
+        if (!_settings.Current.WslTailscaleVisible)
+            return;
+
+        if (!_wsl.HasAuthKey())
+        {
+            if (!askKey)
+            {
+                Note("wsl-tailscale está desativado. Use Subir para configurar.");
+                return;
+            }
+
+            using var dialog = new WslTailscaleKeyForm();
+            if (dialog.ShowDialog(this) != DialogResult.OK)
+                return;
+            try
+            {
+                _wsl.SaveAuthKey(dialog.AuthKey);
+            }
+            catch (Exception ex)
+            {
+                Note("Não foi possível gravar a chave do wsl-tailscale. " + ex.Message);
+                return;
+            }
+        }
+
+        _settings.Current.WslTailscaleConfigured = true;
+        _settings.Save();
+
+        _wslBusy = true;
+        try
+        {
+            Note("Subindo wsl-tailscale…");
+            var code = await _wsl.StartAsync(CancellationToken.None).ConfigureAwait(true);
+            if (IsDisposed)
+                return;
+            Note(code == 0 ? "wsl-tailscale no ar." : "wsl-tailscale não subiu (código " + code + ").");
+        }
+        catch (Exception ex)
+        {
+            Note("wsl-tailscale não subiu. " + ex.Message);
+        }
+        finally
+        {
+            _wslBusy = false;
+            await RefreshWslAsync().ConfigureAwait(true);
+        }
+    }
+
+    private async Task StopWslAsync()
+    {
+        if (_wslBusy || IsDisposed)
+            return;
+        var confirm = MessageBox.Show(
+            "Parar wsl-tailscale agora? O volume permanece.",
+            "Z-Lab — Parar",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question,
+            MessageBoxDefaultButton.Button2);
+        if (confirm != DialogResult.Yes)
+            return;
+
+        _wslBusy = true;
+        try
+        {
+            var code = await _wsl.StopAsync(CancellationToken.None).ConfigureAwait(true);
+            if (!IsDisposed)
+                Note(code == 0 ? "wsl-tailscale parado." : "Não foi possível parar wsl-tailscale (código " + code + ").");
+        }
+        catch (Exception ex)
+        {
+            Note("Não foi possível parar wsl-tailscale. " + ex.Message);
+        }
+        finally
+        {
+            _wslBusy = false;
+            await RefreshWslAsync().ConfigureAwait(true);
+        }
+    }
+
+    private async Task RemoveWslAsync()
+    {
+        if (_wslBusy || IsDisposed)
+            return;
+        var confirm = MessageBox.Show(
+            "Remover wsl-tailscale? O container, o volume e a chave local são apagados. O card sai da tela.",
+            "Z-Lab — Remover",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Warning,
+            MessageBoxDefaultButton.Button2);
+        if (confirm != DialogResult.Yes)
+            return;
+
+        _wslBusy = true;
+        try
+        {
+            await _wsl.RemoveAsync(CancellationToken.None).ConfigureAwait(true);
+            _settings.Current.WslTailscaleVisible = false;
+            _settings.Current.WslTailscaleConfigured = false;
+            _settings.Save();
+            if (!IsDisposed)
+            {
+                _dashboard.SetWslCardVisible(false);
+                Note("wsl-tailscale removido.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Note("Não foi possível remover wsl-tailscale. " + ex.Message);
+        }
+        finally
+        {
+            _wslBusy = false;
+        }
+    }
+
+    private void IncludeWsl()
+    {
+        _settings.Current.WslTailscaleVisible = true;
+        _settings.Current.WslTailscaleConfigured = false;
+        _settings.Save();
+        _dashboard.WslCard.Apply(WslTailscaleSnapshot.Absent, configured: false);
+        _dashboard.SetWslCardVisible(true);
+        Note("wsl-tailscale incluído. Use Subir para configurar.");
+    }
+
+    private async Task RefreshWslAsync()
+    {
+        if (IsDisposed || !_settings.Current.WslTailscaleVisible)
+            return;
+        try
+        {
+            var snap = await _wsl.ReadAsync(CancellationToken.None).ConfigureAwait(true);
+            if (IsDisposed)
+                return;
+            _dashboard.WslCard.Apply(snap, _settings.Current.WslTailscaleConfigured);
+        }
+        catch
+        {
+            if (!IsDisposed)
+                _dashboard.WslCard.Apply(WslTailscaleSnapshot.Absent, _settings.Current.WslTailscaleConfigured);
+        }
     }
 
     private async Task ShowAccessCodeAsync(ServiceCard card)

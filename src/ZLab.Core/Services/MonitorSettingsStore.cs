@@ -9,6 +9,12 @@ public sealed class MonitorSettings
     public int PollSeconds { get; set; } = 8;
     public int LogTailLines { get; set; } = 80;
     public ThemeMode Theme { get; set; } = ThemeMode.System;
+
+    /// <summary>Card local do Tailscale no WSL. Some quando o operador remove.</summary>
+    public bool WslTailscaleVisible { get; set; } = true;
+
+    /// <summary>Depois da primeira configuração, o Z-Lab sobe o container ao abrir.</summary>
+    public bool WslTailscaleConfigured { get; set; }
 }
 
 /// <summary>
